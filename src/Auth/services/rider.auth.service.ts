@@ -164,7 +164,7 @@ export class RiderAuthService {
 
       await this.riderRepository.update(rider.riderID, rider);
 
-      await this.mailService.WelcomeMail(rider.email, rider.name);
+      //await this.mailService.WelcomeMail(rider.email, rider.name);
 
       //save notification
       await this.notificationService.create({
