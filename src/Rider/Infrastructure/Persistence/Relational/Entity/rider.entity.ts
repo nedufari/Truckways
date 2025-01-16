@@ -1,0 +1,143 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { RiderStatus, Role } from 'src/Enums/users.enum';
+import {
+  Column,
+  Entity,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { VehicleEntity } from './vehicle.entity';
+import { BankEntity } from './bank.entity';
+import { WalletEntity } from './wallet.entity';
+import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
+
+@Entity({ name: 'riders' })
+export class RiderEntity {
+  @ApiProperty({ type: Number })
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
+  riderID: string;
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
+  name: string;
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
+  password: string;
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true, unique: true })
+  email: string;
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
+  phoneNumber: string;
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
+  city: string;
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
+  state: string;
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
+  companyRegNum: string;
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
+  driversLicenceFront: string;
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
+  driversLicenceBack: string;
+
+  @ApiProperty({
+    type: 'object',
+    properties: {
+      address: { type: 'string' },
+      lat: { type: 'number' },
+      lon: { type: 'number' },
+    },
+  })
+  @Column('json', { nullable: true })
+  address: {
+    address: string;
+    lat: number;
+    lon: number;
+  };
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
+  profilePicture: string;
+
+  @ApiProperty({ type: Boolean })
+  @Column({ type: 'boolean', default: false })
+  emailConfirmed: boolean;
+
+  @ApiProperty({ type: Boolean })
+  @Column({ type: 'boolean', default: false })
+  isAprroved: boolean;
+
+  @ApiProperty({ type: Boolean })
+  @Column({ type: 'boolean', default: false })
+  isBlocked: boolean;
+
+  @ApiProperty({ enum: Role })
+  @Column({ type: 'enum', enum: Role, default: Role.RIDER })
+  role: Role;
+
+  @ApiProperty({ enum: RiderStatus })
+  @Column({ type: 'enum', enum: RiderStatus, default: RiderStatus.AVAILABLE })
+  RiderStatus: RiderStatus;
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
+  resetPasswordToken: string;
+
+  @ApiProperty()
+  @Column({ type: 'timestamp', nullable: true })
+  resetPasswordTokenExpTime: Date;
+
+  @ApiProperty()
+  @Column({ type: 'timestamp', nullable: true })
+  createdAT: Date;
+
+  @ApiProperty()
+  @Column({ type: 'timestamp', nullable: true })
+  updatedAT: Date;
+
+  //relationships
+
+  //accepted orders
+
+  @ApiProperty({ type: () => [OrderEntity] })
+  @OneToMany(() => OrderEntity, (order) => order.Rider, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  accepted_orders: OrderEntity[];
+
+  //vehicle
+  @ApiProperty({ type: () => VehicleEntity })
+  @OneToOne(() => VehicleEntity, (vehicle) => vehicle.owner)
+  vehicle: VehicleEntity;
+
+  //bank  info
+  @ApiProperty({ type: () => BankEntity })
+  @OneToOne(() => BankEntity, (bank) => bank.owner)
+  bank_details: BankEntity;
+
+  //wallet
+  @ApiProperty({ type: () => WalletEntity })
+  @OneToOne(() => WalletEntity, (wallet) => wallet.rider)
+  my_wallet: BankEntity;
+
+  //rides
+}
