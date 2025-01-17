@@ -10,6 +10,7 @@ import { markMultipleNotificationsAsReadDto } from "src/utils/shared-dto/notific
 import { Customer } from "./Domain/customer";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { updateCustomerDto } from "./Dto/update-customer.dto";
+import { OrderCart } from "src/Order/Domain/order-cart";
 
  
 
@@ -172,19 +173,43 @@ import { updateCustomerDto } from "./Dto/update-customer.dto";
    return await this.customerService.UpdateCustomer(req.user, dto);
  }
 
- //update including adding pics
- @ApiConsumes('multipart/form-data')
- @ApiBody({
+
+ @Get('my-cart')
+ @ApiOkResponse({
    schema: {
-     type: 'object',
-     properties: {
-       profilePics: {
-         type: 'string',
-         format: 'binary',
+     allOf: [
+       { $ref: getSchemaPath(StandardResponse<OrderCart>) },
+       {
+         properties: {
+           payload: {
+             $ref: getSchemaPath(OrderCart),
+           },
+         },
        },
-     },
+     ],
    },
  })
+ @ApiOperation({ summary: 'fetch my cart' })
+ async FetchMyCart(
+   @Req() req,
+ ): Promise<StandardResponse<OrderCart>> {
+   return await this.customerService.fetchMyCart(req.user);
+ }
+
+
+  //update including adding pics
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        profilePics: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
  @Patch('upload-profilePics')
  @ApiOkResponse({
    schema: {

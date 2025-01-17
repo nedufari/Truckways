@@ -29,7 +29,7 @@ export class OrderCartEntity{
 
     @ApiProperty()
     @Column({nullable:true,type:'timestamp'})
-    checkoutedAT:Date
+    LastcheckoutedAT:Date
 
     @ApiProperty({type:()=>[CartItemsEntity]})
     @OneToMany(()=>CartItemsEntity,(items)=>items.cart)

@@ -36,6 +36,7 @@ export class OrderRelationalRepository implements OrderRepository {
   async findByID(id: string): Promise<Order> {
     const order = await this.orderEntityRepository.findOne({
       where: { orderID: id },
+      relations: ['customer', 'bid', 'items'],
     });
     return order ? OrderMapper.toDomain(order) : null;
   }
@@ -97,9 +98,18 @@ export class OrderCartRelationalRepository implements OrderCartRepository {
     return OrderCartMapper.toDomain(savedCart);
   }
 
-  async findByID(id: string): Promise<OrderCart> {
+  async findByID(id: string, customerid: string): Promise<OrderCart> {
     const cart = await this.orderCartEntityRepository.findOne({
-      where: { orderCartID: id },
+      where: { orderCartID: id, customer: { customerID: customerid } },
+      relations: ['items'],
+    });
+    return cart ? OrderCartMapper.toDomain(cart) : null;
+  }
+
+  async findByCustomer(customerid: string): Promise<OrderCart> {
+    const cart = await this.orderCartEntityRepository.findOne({
+      where: { customer: { customerID: customerid } },
+      relations: ['items'],
     });
     return cart ? OrderCartMapper.toDomain(cart) : null;
   }
@@ -114,6 +124,17 @@ export class OrderCartRelationalRepository implements OrderCartRepository {
     );
 
     return OrderCartMapper.toDomain(savedCart);
+  }
+
+  async update(id: string, cart: Partial<OrderCart>): Promise<OrderCart> {
+    await this.orderCartEntityRepository.update(
+      id,
+      OrderCartMapper.toPersitence(cart as OrderCart),
+    );
+    const updatedCart = await this.orderCartEntityRepository.findOne({
+      where: { orderCartID: id },
+    });
+    return OrderCartMapper.toDomain(updatedCart);
   }
 
   async remove(id: string): Promise<void> {

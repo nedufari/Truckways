@@ -15,8 +15,10 @@ export abstract class OrderRepository {
 
 export abstract class OrderCartRepository {
   abstract create(cart: OrderCart): Promise<OrderCart>;
-  abstract findByID(id: string): Promise<OrderCart | null>;
+  abstract findByID(id: string, customerId:string): Promise<OrderCart | null>;
+  abstract findByCustomer( customerId:string): Promise<OrderCart | null>;
   abstract remove(id: string): Promise<void>;
+  abstract update(id: string, cart: Partial<OrderCart>): Promise<OrderCart>;
   abstract save(cart: OrderCart): Promise<OrderCart>;
 }
 

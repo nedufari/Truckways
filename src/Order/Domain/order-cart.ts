@@ -26,7 +26,7 @@ export class OrderCart{
 
     @ApiProperty()
     @IsDate()
-    checkoutedAT:Date
+    LastcheckoutedAT:Date
 
     @ApiProperty({type:()=>[CartItemsEntity]})
     items:CartItemsEntity[]

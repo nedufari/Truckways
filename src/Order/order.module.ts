@@ -6,7 +6,10 @@ import { GeneratorService } from 'src/utils/services/generator.service';
 import { NotificationsService } from 'src/utils/services/notifications.service';
 import { ResponseService } from 'src/utils/services/response.service';
 import { NotificationsEntity } from 'src/utils/shared-entities/notification.entity';
-import { PersitenceRelationalOrderModule } from './Relational/persitence.relational.order.module';
+import { PersitenceRelationalOrderModule } from './Infrastructure/Persistence/Relational/persitence.relational.order.module';
+import { GeoLocationService } from 'src/utils/services/geolocation.service';
+import { OrderService } from './order.service';
+import { OrderController } from './order.controller';
 
 @Module({
   imports: [
@@ -19,7 +22,9 @@ import { PersitenceRelationalOrderModule } from './Relational/persitence.relatio
     CloudinaryService,
     JwtService,
     GeneratorService,
+    GeoLocationService,
+    OrderService
   ],
-  controllers: [],
+  controllers: [OrderController],
 })
 export class OrderModule {}

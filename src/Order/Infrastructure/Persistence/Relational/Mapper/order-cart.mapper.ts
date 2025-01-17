@@ -8,7 +8,7 @@ export class OrderCartMapper {
     domainEntity.id = raw.id;
     domainEntity.orderCartID = raw.orderCartID;
     domainEntity.checkedOut = raw.checkedOut;
-    domainEntity.checkoutedAT = raw.checkoutedAT;
+    domainEntity.LastcheckoutedAT = raw.LastcheckoutedAT;
     domainEntity.customer = raw.customer;
     domainEntity.createdAt = raw.createdAt;
     domainEntity.items = raw.items
@@ -25,7 +25,7 @@ export class OrderCartMapper {
     }
     persistenceEntity.orderCartID = domainEntity.orderCartID;
     persistenceEntity.checkedOut = domainEntity.checkedOut;
-    persistenceEntity.checkoutedAT = domainEntity.checkoutedAT;
+    persistenceEntity.LastcheckoutedAT = domainEntity.LastcheckoutedAT;
     persistenceEntity.createdAt = domainEntity.createdAt;
     persistenceEntity.customer = domainEntity.customer;
     persistenceEntity.items = domainEntity.items

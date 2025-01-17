@@ -10,9 +10,10 @@ import { JwtService } from '@nestjs/jwt';
 import { CustomerService } from './customer.service';
 import { CustomerController } from './customer.controller';
 import { GeoLocationService } from 'src/utils/services/geolocation.service';
+import { PersitenceRelationalOrderModule } from 'src/Order/Infrastructure/Persistence/Relational/persitence.relational.order.module';
 
 @Module({
-  imports: [RelationalPersistenceCustomerModule, TypeOrmModule.forFeature([NotificationsEntity])],
+  imports: [RelationalPersistenceCustomerModule, PersitenceRelationalOrderModule,TypeOrmModule.forFeature([NotificationsEntity])],
   providers: [
     NotificationsService,
     ResponseService,

@@ -170,7 +170,7 @@ export class CustomerAuthService {
       const cart = await this.cartRepository.create({
         id: 0,
         createdAt: new Date(),
-        checkoutedAT: undefined,
+        LastcheckoutedAT: undefined,
         checkedOut: false,
         items: [],
         orderCartID: cartID,

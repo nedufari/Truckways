@@ -14,6 +14,7 @@ export class CustomerRelationalRepository implements CustomerRepository {
   async profile(customer: Customer): Promise<Customer> {
     const customerProfile = await this.customerEntityRepository.findOne({
       where: { customerID: customer.customerID },
+      relations: ['my_cart'],
     });
     return customerProfile ? CustomerMapper.toDomain(customerProfile) : null;
   }
