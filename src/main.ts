@@ -20,6 +20,7 @@ import { OrderCart } from './Order/Domain/order-cart';
 import { CartItem, Ordertem } from './Order/Domain/order-cart-items';
 import { NotificationsEntity } from './utils/shared-entities/notification.entity';
 import { OtpEntity } from './utils/shared-entities/otp.entity';
+import { Bid } from './Order/Domain/bids';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
@@ -67,7 +68,9 @@ async function bootstrap() {
       CartItem,
       Ordertem,
       NotificationsEntity,
-      OtpEntity
+      OtpEntity,
+      Bid,
+      
       
     ],
   };

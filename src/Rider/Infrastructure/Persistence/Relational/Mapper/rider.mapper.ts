@@ -8,6 +8,7 @@ export class RiderMapper {
     const domainEntity = new Rider();
     domainEntity.id = raw.id;
     domainEntity.name = raw.name;
+    domainEntity.deviceToken= raw.deviceToken;
     domainEntity.address = raw.address;
     domainEntity.phoneNumber = raw.phoneNumber;
     domainEntity.driversLicenceBack = raw.driversLicenceBack;
@@ -40,6 +41,7 @@ export class RiderMapper {
       persistenceEntity.id = domainEntity.id;
     }
     persistenceEntity.name = domainEntity.name;
+    persistenceEntity.deviceToken = domainEntity.deviceToken;
     persistenceEntity.riderID = domainEntity.riderID;
     persistenceEntity.address = domainEntity.address;
     persistenceEntity.driversLicenceBack = domainEntity.driversLicenceBack;

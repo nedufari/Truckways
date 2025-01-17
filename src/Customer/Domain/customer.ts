@@ -39,6 +39,9 @@ export class Customer {
   phoneNumber: string;
 
   @ApiProperty({ type: String })
+  deviceToken: string;
+
+  @ApiProperty({ type: String })
   @IsString()
   altrnatePhoneNumber: string;
 

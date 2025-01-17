@@ -11,8 +11,8 @@ export class VehicleMapper {
       domainEntity.vehicleID = raw.vehicleID;
       domainEntity.vehiclePicture = raw.vehiclePicture;
       domainEntity.vehicleType = raw.vehicleType;
-      domainEntity.createdAt = raw.createdAt;
-      domainEntity.updatedAt = raw.updatedAt
+      domainEntity.createdAT = raw.createdAT;
+      domainEntity.updatedAT = raw.updatedAT
 
     
       return domainEntity;
@@ -28,8 +28,8 @@ export class VehicleMapper {
       persistenceEntity.vehicleDocuments = domainEntity.vehicleDocuments;
       persistenceEntity.vehicleID = domainEntity.vehicleID;
       persistenceEntity.vehiclePicture = domainEntity.vehiclePicture;
-      persistenceEntity.updatedAt = domainEntity.updatedAt;
-      persistenceEntity.createdAt = domainEntity.createdAt;
+      persistenceEntity.updatedAT = domainEntity.updatedAT;
+      persistenceEntity.createdAT = domainEntity.createdAT;
       persistenceEntity.vehicleType = domainEntity.vehicleType
      
       return persistenceEntity;

@@ -13,12 +13,26 @@ import { markMultipleNotificationsAsReadDto } from 'src/utils/shared-dto/notific
 import { Customer } from './Domain/customer';
 import { updateCustomerDto } from './Dto/update-customer.dto';
 import { GeoLocationService } from 'src/utils/services/geolocation.service';
-import { OrderCartRepository } from 'src/Order/Infrastructure/Persistence/all-order-repositories';
+import {
+  BidRepository,
+  OrderCartRepository,
+} from 'src/Order/Infrastructure/Persistence/all-order-repositories';
 import { OrderCart } from 'src/Order/Domain/order-cart';
+import { PaginationDto } from 'src/utils/shared-dto/pagination.dto';
+import { Bid } from 'src/Order/Domain/bids';
+import { BidActionDto } from '../utils/shared-dto/bid-action.dto';
+import {
+  BidAction,
+  BidActionResult,
+  BidStatus,
+  BidTypeAccepted,
+} from 'src/Enums/order.enum';
+import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
 @Injectable()
 export class CustomerService {
   constructor(
     private customerRepo: CustomerRepository,
+    private BidRepository: BidRepository,
     private responseService: ResponseService,
     private cloudinaryService: CloudinaryService,
     private notificationsService: NotificationsService,
@@ -293,5 +307,225 @@ export class CustomerService {
         error.message,
       );
     }
+  }
+
+  // fetch all bids
+  async FetchallbidsForcustomer(
+    customer: CustomerEntity,
+    dto: PaginationDto,
+  ): Promise<StandardResponse<{ data: Bid[]; total: number }>> {
+    try {
+      const { data: bids, total } = await this.BidRepository.fetchALLCustomer(
+        dto,
+        customer.customerID,
+      );
+
+      return this.responseService.success(
+        bids.length ? 'Bids retrived successfully' : 'No bids yet',
+        {
+          data: bids,
+          total,
+          currentPage: dto.page,
+          pageSize: dto.limit,
+        },
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error fetching bids',
+        error.message,
+      );
+    }
+  }
+
+  //fetch one bid by id
+  async FetchOneBid(
+    customer: CustomerEntity,
+    bidId: string,
+  ): Promise<StandardResponse<Bid>> {
+    try {
+      const bid = await this.BidRepository.findByIDForCustomer(
+        bidId,
+        customer.customerID,
+      );
+      if (!bid) return this.responseService.notFound('Bid not found');
+
+      return this.responseService.success(
+        'single bid retrieved successfully',
+        bid,
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error fetching one bid',
+        error.message,
+      );
+    }
+  }
+
+  // async CustomerAcceptOrDeclineBid(
+  //   customer: CustomerEntity,
+  //   bidId: string,
+  //   dto: BidActionDto,
+  // ): Promise<StandardResponse<boolean>> {
+  //   try {
+  //     const bid = await this.BidRepository.findByIDForCustomer(
+  //       bidId,
+  //       customer.customerID,
+  //     );
+  //     if (!bid) return this.responseService.notFound('Bid not found');
+
+  //     if (dto.doYouAccept === true) {
+  //       if (bid.bidStatus !== BidStatus.COUNTERED)
+  //         return this.responseService.badRequest(
+  //           'the bid has to be countered first before you can accept',
+  //         );
+  //       await this.BidRepository.update(bid.id, {
+  //         bidStatus: BidStatus.BID_ACCEPTED,
+  //         bidTypeAccepted: BidTypeAccepted.COUNTER,
+  //         acceptedAT: new Date(),
+  //       });
+
+  //       await this.notificationsService.create({
+  //         message: ` ${customer.name},  has accepted a bid .`,
+  //         subject: 'Bid Accepted',
+  //         account: customer.customerID, //saves when the user is created
+  //       });
+
+  //       //push  notification
+
+  //       // websocket event notification
+  //     }
+
+  //     if (dto.doYouAccept === false) {
+  //       if (bid.bidStatus !== BidStatus.COUNTERED)
+  //         return this.responseService.badRequest(
+  //           'the bid has to be countered first before you can decline it',
+  //         );
+  //       await this.BidRepository.update(bid.id, {
+  //         bidStatus: BidStatus.BID_DECLINED,
+  //         declinedAT: new Date(),
+  //       });
+
+  //       //notification
+  //       await this.notificationsService.create({
+  //         message: ` ${customer.name},  has declined a bid .`,
+  //         subject: 'Bid declined',
+  //         account: customer.customerID, //saves when the user is created
+  //       });
+
+  //       //push  notification
+
+  //       // websocket event notification
+  //     }
+
+  //     return this.responseService.success(
+  //       dto.doYouAccept === true
+  //         ? 'bid accepted successfully, please proceed to making payment'
+  //         : 'bid declined successfully, Please see other offers',
+  //       true,
+  //     );
+  //   } catch (error) {
+  //     console.error(error);
+  //     return this.responseService.internalServerError(
+  //       'Error Performing this bid action',
+  //       error.message,
+  //     );
+  //   }
+  // }
+
+  //biding action
+
+  async CustomerAcceptOrDeclineBid(
+    customer: CustomerEntity,
+    bidId: string,
+    dto: BidActionDto,
+  ): Promise<StandardResponse<BidActionResult>> {
+    try {
+      const bid = await this.BidRepository.findByIDForCustomer(
+        bidId,
+        customer.customerID,
+      );
+
+      if (!bid) {
+        return this.responseService.notFound('Bid not found');
+      }
+
+      if (bid.bidStatus !== BidStatus.COUNTERED) {
+        return this.responseService.badRequest(
+          'Your initial bid must be countered first by a Rider before you can take any action',
+        );
+      }
+
+      const action = dto.doYouAccept ? BidAction.ACCEPT : BidAction.DECLINE;
+      const result = await this.processBidAction(action, bid, customer);
+
+      return this.responseService.success(result.message, {
+        success: result.success,
+        message: result.message,
+      });
+    } catch (error) {
+      console.error('CustomerAcceptOrDeclineBid error:', error);
+      return this.responseService.internalServerError(
+        'Error performing bid action',
+        error.message,
+      );
+    }
+  }
+
+  private async processBidAction(
+    action: BidAction,
+    bid: BidEntity,
+    customer: CustomerEntity,
+  ): Promise<BidActionResult> {
+    const actions = {
+      [BidAction.ACCEPT]: async (): Promise<BidActionResult> => {
+        await this.BidRepository.update(bid.id, {
+          bidStatus: BidStatus.BID_ACCEPTED,
+          bidTypeAccepted: BidTypeAccepted.COUNTER,
+          acceptedAT: new Date(),
+        });
+
+        await this.notificationsService.create({
+          message: ` ${customer.name},  has accepted a bid .`,
+          subject: 'Bid Accepted',
+          account: customer.customerID,
+        });
+
+        //push notification
+
+        //emit websocket event
+
+        return {
+          success: true,
+          message:
+            'Bid accepted successfully, please proceed to making payment',
+        };
+      },
+
+      [BidAction.DECLINE]: async (): Promise<BidActionResult> => {
+        await this.BidRepository.update(bid.id, {
+          bidStatus: BidStatus.BID_DECLINED,
+          bidTypeAccepted: BidTypeAccepted.COUNTER,
+          declinedAT: new Date(),
+        });
+
+        await this.notificationsService.create({
+          message: ` ${customer.name},  has declined a bid .`,
+          subject: 'Bid Declined',
+          account: customer.customerID,
+        });
+
+        //push notification
+
+        //emit websocket event
+
+        return {
+          success: true,
+          message: 'Bid declined successfully, please see other offers',
+        };
+      },
+    };
+
+    return actions[action]();
   }
 }

@@ -27,11 +27,11 @@ export class Bank{
 
     @ApiProperty()
     @IsDate()
-    createdAt:Date
+    createdAT:Date
 
     @ApiProperty()
     @IsDate()
-    updatedAt:Date
+    updatedAT:Date
 
     @ApiProperty({type:()=>RiderEntity})
     owner:RiderEntity

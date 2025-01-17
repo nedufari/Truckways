@@ -7,10 +7,15 @@ import { CloudinaryService } from 'src/utils/services/cloudinary.service';
 import { GeneratorService } from 'src/utils/services/generator.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
+import { GeoLocationService } from 'src/utils/services/geolocation.service';
+import { PersitenceRelationalOrderModule } from 'src/Order/Infrastructure/Persistence/Relational/persitence.relational.order.module';
+import { RiderService } from './rider.service';
+import { RiderController } from './rider.controller';
 
 @Module({
   imports: [
     RelationalPersistenceRiderModule,
+    PersitenceRelationalOrderModule,
     TypeOrmModule.forFeature([NotificationsEntity]),
   ],
   providers: [
@@ -19,7 +24,10 @@ import { JwtService } from '@nestjs/jwt';
     CloudinaryService,
     GeneratorService,
     JwtService,
+    GeoLocationService,
+    RiderService,
+
   ],
-  controllers: [],
+  controllers: [RiderController],
 })
 export class RiderModule {}

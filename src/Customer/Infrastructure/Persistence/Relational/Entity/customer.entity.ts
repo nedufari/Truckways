@@ -59,6 +59,10 @@ export class CustomerEntity {
   @Column({ nullable: true })
   profilePicture: string;
 
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
+  deviceToken: string;
+
   @ApiProperty({ type: Boolean })
   @Column({ type: 'boolean', default: false })
   isVerified: boolean;

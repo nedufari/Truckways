@@ -32,11 +32,11 @@ export class VehicleEntity{
 
     @ApiProperty()
     @Column({type:'timestamp', nullable:true})
-    createdAt:Date
+    createdAT:Date
 
     @ApiProperty()
     @Column({type:'timestamp', nullable:true})
-    updatedAt:Date
+    updatedAT:Date
 
     @ApiProperty({type:()=>RiderEntity})
     @OneToOne(()=>RiderEntity, (rider)=>rider.vehicle)

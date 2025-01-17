@@ -6,6 +6,7 @@ export class CustomerMapper {
     const domainEntity = new Customer();
     domainEntity.id = raw.id;
     domainEntity.name = raw.name;
+    domainEntity.deviceToken = raw.deviceToken;
     domainEntity.address = raw.address;
     domainEntity.phoneNumber = raw.phoneNumber;
     domainEntity.altrnatePhoneNumber = raw.altrnatePhoneNumber;
@@ -29,6 +30,7 @@ export class CustomerMapper {
       persistenceEntity.id = domainEntity.id;
     }
     persistenceEntity.name = domainEntity.name;
+    persistenceEntity.deviceToken = domainEntity.deviceToken;
     persistenceEntity.customerID = domainEntity.customerID;
     persistenceEntity.address = domainEntity.address;
     persistenceEntity.altrnatePhoneNumber = domainEntity.altrnatePhoneNumber;

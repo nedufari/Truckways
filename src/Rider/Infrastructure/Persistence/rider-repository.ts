@@ -11,7 +11,7 @@ export abstract class RiderRepository{
     abstract find(dto:PaginationDto):Promise<{data:Rider[], total:number}>
     abstract findByEmail(rider:string):Promise<Rider | null>
     abstract findbyPasswordResetToken (token:string):Promise <Rider|null>;
-    abstract update (id:string , rider:Partial<Rider>):Promise<Rider>
+    abstract update (id:number , rider:Partial<Rider>):Promise<Rider>
     abstract remove (id:string):Promise<void>
     abstract profile (rider:Rider):Promise<Rider>
     abstract save (rider:Rider):Promise<Rider>

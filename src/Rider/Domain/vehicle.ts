@@ -30,11 +30,11 @@ export class Vehicle{
 
     @ApiProperty()
     @IsString()
-    createdAt:Date
+    createdAT:Date
 
     @ApiProperty()
     @IsString()
-    updatedAt:Date
+    updatedAT:Date
 
     @ApiProperty({type:()=>RiderEntity})
     owner:RiderEntity

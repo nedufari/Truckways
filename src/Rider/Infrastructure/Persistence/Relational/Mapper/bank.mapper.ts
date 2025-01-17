@@ -9,9 +9,9 @@ export class BankMapper {
     domainEntity.accountName = raw.accountName;
     domainEntity.accountNumber = raw.accountNumber;
     domainEntity.bankName = raw.bankName;
-    domainEntity.createdAt = raw.createdAt;
+    domainEntity.createdAT= raw.createdAT;
     domainEntity.owner = raw.owner;
-    domainEntity.updatedAt = raw.updatedAt;
+    domainEntity.updatedAT = raw.updatedAT;
     return domainEntity;
   }
 
@@ -24,9 +24,9 @@ export class BankMapper {
     persistenceEntity.accountNumber = domainEntity.accountNumber;
     persistenceEntity.bankID = domainEntity.bankID;
     persistenceEntity.bankName = domainEntity.bankName;
-    persistenceEntity.createdAt = domainEntity.createdAt;
+    persistenceEntity.createdAT = domainEntity.createdAT;
     persistenceEntity.owner = domainEntity.owner;
-    persistenceEntity.updatedAt = domainEntity.updatedAt;
+    persistenceEntity.updatedAT = domainEntity.updatedAT;
     return persistenceEntity;
   }
 }

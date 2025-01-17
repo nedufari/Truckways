@@ -72,13 +72,13 @@ export class RiderRelationalRepository implements RiderRepository {
     return { data: riders, total };
   }
 
-  async update(id: string, rider: Partial<Rider>): Promise<Rider> {
+  async update(id: number, rider: Partial<Rider>): Promise<Rider> {
     await this.riderEntityRepository.update(
       id,
       RiderMapper.toPerisitence(rider as Rider),
     );
     const updatedRider = await this.riderEntityRepository.findOne({
-      where: { riderID: id },
+      where: { id: id },
     });
     return RiderMapper.toDomain(updatedRider);
   }

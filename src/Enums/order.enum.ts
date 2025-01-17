@@ -22,3 +22,13 @@ export enum OrderStatus {
   ONGOING = 'ongoing',
   PENDING = 'pending',
 }
+
+export enum BidAction {
+  ACCEPT = 'ACCEPT',
+  DECLINE = 'DECLINE'
+}
+
+export interface BidActionResult {
+  success: boolean;
+  message: string;
+}

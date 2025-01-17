@@ -40,7 +40,10 @@ export abstract class OrderItemRepository {
 export abstract class BidRepository {
   abstract create(bid: Bid): Promise<Bid>;
   abstract findByID(id: string): Promise<Bid | null>;
+  abstract findByIDForCustomer(id: string,customerId:string): Promise<Bid | null>;
+  abstract fetchALLCustomer(dto:PaginationDto,customerID:string):Promise<{data:Bid[],total:number}>
+  abstract fetchALLRider(dto:PaginationDto,customer:string):Promise<{data:Bid[],total:number}>
   abstract remove(id: string): Promise<void>;
-  abstract update(id: string, item: Partial<Bid>): Promise<Bid>;
+  abstract update(id: number, item: Partial<Bid>): Promise<Bid>;
   abstract save(bid: Bid): Promise<Bid>;
 }

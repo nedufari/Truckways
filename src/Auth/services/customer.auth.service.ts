@@ -89,6 +89,7 @@ export class CustomerAuthService {
         password: hashpassword,
         customerID: customerIdcustom,
         id: 0,
+        deviceToken:undefined,
         profilePicture: '',
         role: Role.CUSTOMER,
         createdAT: new Date(),

@@ -43,6 +43,9 @@ export class Rider{
   phoneNumber: string;
 
   @ApiProperty({ type: String })
+  deviceToken: string;
+
+  @ApiProperty({ type: String })
   @IsString()
   city: string;
 

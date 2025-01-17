@@ -241,11 +241,56 @@ export class BidsRelationalRepository implements BidRepository {
     return BidMapper.toDomain(savedBid);
   }
 
-  async findByID(id: string): Promise<Bid> {
+  async findByID(id: string): Promise<Bid | null> {
     const bid = await this.bidEntityRepository.findOne({
       where: { bidID: id },
     });
     return bid ? BidMapper.toDomain(bid) : null;
+  }
+
+  async findByIDForCustomer(
+    id: string,
+    customerId: string,
+  ): Promise<Bid | null> {
+    const bid = await this.bidEntityRepository.findOne({
+      where: { bidID: id, order: { customer: { customerID: customerId } } },
+      relations: ['order', 'order.customer'],
+    });
+    return bid ? BidMapper.toDomain(bid) : null;
+  }
+
+  async fetchALLCustomer(
+    dto: PaginationDto,
+    customerId: string,
+  ): Promise<{ data: Bid[]; total: number }> {
+    const { page, limit, sortBy, sortOrder } = dto;
+    const [result, total] = await this.bidEntityRepository.findAndCount({
+      where: { order: { customer: { customerID: customerId } } },
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sortBy]: sortOrder },
+      relations: ['order', 'order.customer'],
+    });
+    const bids = result.map(BidMapper.toDomain);
+    return { data: bids, total };
+  }
+
+  //return  back to this soon
+
+  async fetchALLRider(
+    dto: PaginationDto,
+    customerId: string,
+  ): Promise<{ data: Bid[]; total: number }> {
+    const { page, limit, sortBy, sortOrder } = dto;
+    const [result, total] = await this.bidEntityRepository.findAndCount({
+      where: { order: { customer: { customerID: customerId } } },
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sortBy]: sortOrder },
+      relations: ['order', 'order.customer'],
+    });
+    const bids = result.map(BidMapper.toDomain);
+    return { data: bids, total };
   }
 
   async save(bid: Bid): Promise<Bid> {
@@ -261,13 +306,13 @@ export class BidsRelationalRepository implements BidRepository {
     await this.bidEntityRepository.delete(id);
   }
 
-  async update(id: string, bid: Partial<Bid>): Promise<Bid> {
+  async update(id: number, bid: Partial<Bid>): Promise<Bid> {
     await this.bidEntityRepository.update(
       id,
       BidMapper.toPeristence(bid as Bid),
     );
     const updatedBid = await this.bidEntityRepository.findOne({
-      where: { bidID: id },
+      where: { id: id },
     });
     return BidMapper.toDomain(updatedBid);
   }

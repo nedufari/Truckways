@@ -263,4 +263,9 @@ export class OrderService {
       );
     }
   }
+
+
+  //pay for agreed orders and bids. 
+  
+
 }

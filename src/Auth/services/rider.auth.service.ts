@@ -86,8 +86,9 @@ export class RiderAuthService {
           password: hashpassword,
           riderID: riderIdcustom,
           id: 0,
+          deviceToken:undefined,
           profilePicture: '',
-          role: Role.CUSTOMER,
+          role: Role.RIDER,
           createdAT: new Date(),
           updatedAT: undefined,
           emailConfirmed: false,
@@ -160,7 +161,7 @@ export class RiderAuthService {
       rider.emailConfirmed = true;
       rider.updatedAT = new Date();
 
-      await this.riderRepository.update(rider.riderID, rider);
+      await this.riderRepository.save(rider);
 
       //await this.mailService.WelcomeMail(rider.email, rider.name);
 
@@ -252,7 +253,7 @@ export class RiderAuthService {
       expirationTime.setHours(expirationTime.getHours() + 1);
       rider.resetPasswordToken = resetOtp;
       rider.resetPasswordTokenExpTime = expirationTime;
-      await this.riderRepository.update(rider.riderID, rider);
+      await this.riderRepository.update(rider.id, rider);
 
       await this.notificationService.create({
         message: `Hi ${rider.name}, password reset otp sent.`,
@@ -327,7 +328,7 @@ export class RiderAuthService {
       (rider.resetPasswordToken = null),
         (rider.resetPasswordTokenExpTime = null);
 
-      await this.riderRepository.update(rider.riderID, rider);
+      await this.riderRepository.save(rider);
 
       await this.notificationService.create({
         message: `Hi ${rider.name}, password reset sucessful.`,
