@@ -14,6 +14,7 @@ export class BidMapper {
     domainEntity.declinedAT = raw.declinedAT;
     domainEntity.acceptedAT = raw.acceptedAT;
     domainEntity.order = raw.order;
+    domainEntity.rider = raw.rider;
     domainEntity.initialBid_value = raw.initialBid_value;
     return domainEntity;
   }
@@ -33,6 +34,7 @@ export class BidMapper {
     persistenceEntity.declinedAT = domainEntity.declinedAT;
     persistenceEntity.initialBid_value = domainEntity.initialBid_value;
     persistenceEntity.order = domainEntity.order;
+    persistenceEntity.rider = domainEntity.rider
     return persistenceEntity;
   }
 }

@@ -69,6 +69,22 @@ export class OrderRelationalRepository implements OrderRepository {
     return { data: orders, total };
   }
 
+  async findAllRelatedToRider(
+    riderID: string,
+    dto: PaginationDto,
+  ): Promise<{ data: Order[]; total: number }> {
+    const { page, limit, sortBy, sortOrder } = dto;
+    const [result, total] = await this.orderEntityRepository.findAndCount({
+      where: { Rider:{riderID:riderID} },
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sortBy]: sortOrder },
+      relations: ['customer', 'bid', 'rider', 'rider.vehicle', 'items'],
+    });
+    const orders = result.map(OrderMapper.toDomain);
+    return { data: orders, total };
+  }
+
   async save(order: Order): Promise<Order> {
     const persistenceOrder = OrderMapper.toPersistence(order);
     const savedOrder = await this.orderEntityRepository.save(persistenceOrder, {
@@ -244,6 +260,7 @@ export class BidsRelationalRepository implements BidRepository {
   async findByID(id: string): Promise<Bid | null> {
     const bid = await this.bidEntityRepository.findOne({
       where: { bidID: id },
+      relations: ['order', 'order.customer', 'rider'],
     });
     return bid ? BidMapper.toDomain(bid) : null;
   }
@@ -254,7 +271,7 @@ export class BidsRelationalRepository implements BidRepository {
   ): Promise<Bid | null> {
     const bid = await this.bidEntityRepository.findOne({
       where: { bidID: id, order: { customer: { customerID: customerId } } },
-      relations: ['order', 'order.customer'],
+      relations: ['order', 'order.customer', 'rider','rider.vehicle'],
     });
     return bid ? BidMapper.toDomain(bid) : null;
   }
@@ -269,7 +286,23 @@ export class BidsRelationalRepository implements BidRepository {
       skip: (page - 1) * limit,
       take: limit,
       order: { [sortBy]: sortOrder },
-      relations: ['order', 'order.customer'],
+      relations: ['order', 'order.customer', 'rider','rider.vehicle'],
+    });
+    const bids = result.map(BidMapper.toDomain);
+    return { data: bids, total };
+  }
+
+  async fetchALLRider(
+    dto: PaginationDto,
+    riderId: string,
+  ): Promise<{ data: Bid[]; total: number }> {
+    const { page, limit, sortBy, sortOrder } = dto;
+    const [result, total] = await this.bidEntityRepository.findAndCount({
+      where: { rider:{riderID:riderId}},
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sortBy]: sortOrder },
+      relations: ['order', 'order.customer', 'rider'],
     });
     const bids = result.map(BidMapper.toDomain);
     return { data: bids, total };
@@ -277,17 +310,16 @@ export class BidsRelationalRepository implements BidRepository {
 
   //return  back to this soon
 
-  async fetchALLRider(
+  async fetchALL(
     dto: PaginationDto,
-    customerId: string,
   ): Promise<{ data: Bid[]; total: number }> {
     const { page, limit, sortBy, sortOrder } = dto;
     const [result, total] = await this.bidEntityRepository.findAndCount({
-      where: { order: { customer: { customerID: customerId } } },
+      //where: { order: { customer: { customerID: customerId } } },
       skip: (page - 1) * limit,
       take: limit,
       order: { [sortBy]: sortOrder },
-      relations: ['order', 'order.customer'],
+      relations: ['order', 'order.customer', 'rider'],
     });
     const bids = result.map(BidMapper.toDomain);
     return { data: bids, total };
@@ -312,7 +344,7 @@ export class BidsRelationalRepository implements BidRepository {
       BidMapper.toPeristence(bid as Bid),
     );
     const updatedBid = await this.bidEntityRepository.findOne({
-      where: { id: id },
+      where: { id: id },relations:['rider','rider.vehicle']
     });
     return BidMapper.toDomain(updatedBid);
   }

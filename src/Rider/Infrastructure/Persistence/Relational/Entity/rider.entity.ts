@@ -11,6 +11,7 @@ import { VehicleEntity } from './vehicle.entity';
 import { BankEntity } from './bank.entity';
 import { WalletEntity } from './wallet.entity';
 import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
+import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
 
 @Entity({ name: 'riders' })
 export class RiderEntity {
@@ -127,6 +128,15 @@ export class RiderEntity {
     onDelete: 'SET NULL',
   })
   accepted_orders: OrderEntity[];
+
+  //bids 
+
+  @ApiProperty({ type: () => [BidEntity] })
+  @OneToMany(() => BidEntity, (bids) => bids.rider, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  accepted_bids: BidEntity[];
 
   //vehicle
   @ApiProperty({ type: () => VehicleEntity })

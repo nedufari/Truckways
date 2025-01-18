@@ -35,10 +35,19 @@ import { Vehicle } from './Domain/vehicle';
 import { VehicleDto } from './Dto/vehicle-profile.dto';
 import { Bank } from './Domain/bank';
 import { BankDto } from './Dto/payment-profile.dto';
+import { Bid } from 'src/Order/Domain/bids';
+import { PaginationDto } from 'src/utils/shared-dto/pagination.dto';
+import { BidActionDto, CounterBidDto } from 'src/utils/shared-dto/bid-action.dto';
+import { BidActionResult } from 'src/Enums/order.enum';
+import { Order } from 'src/Order/Domain/order';
+import { RoleGuard } from 'src/Auth/Guard/role.guard';
+import { Roles } from 'src/Auth/Decorator/role.decorator';
+import { Role } from 'src/Enums/users.enum';
 
 @ApiTags('Rider')
 @ApiBearerAuth()
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard,RoleGuard)
+@Roles(Role.RIDER)
 @Controller({
   path: 'rider/',
   version: '1',
@@ -75,7 +84,7 @@ export class RiderController {
     type: 'number',
     description: 'Items per page',
   })
-  @ApiOperation({ summary: 'all notifications for a Planner' })
+  @ApiOperation({ summary: 'all notifications for a Rider' })
   async fetchAllnotificationsRelatedToaPlanner(
     @Query() dto: PaginationParams,
     @Req() req,
@@ -302,5 +311,271 @@ export class RiderController {
     @Body() dto: BankDto,
   ): Promise<StandardResponse<Bank>> {
     return await this.riderService.PaymentProfile(req.user, dto);
+  }
+
+
+
+  @Get('all-available-bids')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(StandardResponse<{ data: Bid[]; total: number }>),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Bid),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: 'number',
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: 'number',
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: 'string',
+    description: 'Sorting field',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sorting order',
+  })
+  @ApiOperation({ summary: 'all  avialable bids related to an order and a customer' })
+  async fetchAllAvailableBids(
+    @Query() dto: PaginationDto,
+  ): Promise<StandardResponse<{ data: Bid[]; total: number }>> {
+    return await this.riderService.FetchallbidsFromcustomer(dto);
+  }
+
+
+
+  @Get('one-bid/:BidID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Bid>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Bid),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'fetch one bid' })
+  async FetccOneBid(
+    @Param('BidID') BidId: string,
+  ): Promise<StandardResponse<Bid>> {
+    return await this.riderService.FetchOneBid(BidId);
+  }
+
+
+
+  @Get('all-my-involved-bids')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(StandardResponse<{ data: Bid[]; total: number }>),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Bid),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: 'number',
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: 'number',
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: 'string',
+    description: 'Sorting field',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sorting order',
+  })
+  @ApiOperation({ summary: 'all bids i have acepted as a rider' })
+  async fetchAllMyBids(
+    @Query() dto: PaginationDto,
+    @Req()req
+  ): Promise<StandardResponse<{ data: Bid[]; total: number }>> {
+    return await this.riderService.FetchallMyInvolvedBids(req.user,dto);
+  }
+
+
+
+  @Patch('bid-action/:BidID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<BidActionResult>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Bid),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary:
+      'accept or decline a bid sent in from the customer ',
+  })
+  async AcceptOrDeclineBid(
+    @Body() dto: BidActionDto,
+    @Req() req,
+    @Param('BidID') BidId: string,
+  ): Promise<StandardResponse<BidActionResult>> {
+    return await this.riderService.RiderAcceptOrDeclineBid(
+      req.user,
+      BidId,
+      dto,
+    );
+  }
+
+
+  @Patch('counter-bid/:BidID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Bid>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Bid),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary:
+      'counter a bid from a customer ',
+  })
+  async CounterBid(
+    @Body() dto: CounterBidDto,
+    @Req() req,
+    @Param('BidID') BidId: string,
+  ): Promise<StandardResponse<Bid>> {
+    return await this.riderService.CounterBid(
+      req.user,
+      BidId,
+      dto,
+    );
+  }
+
+
+
+
+  @Get('one-order/:orderID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Order>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Order),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'fetch one order' })
+  async FetccOneOrder(
+    @Param('orderD') orderId: string,
+  ): Promise<StandardResponse<Order>> {
+    return await this.riderService.FetchOneOrder(orderId);
+  }
+
+
+
+  @Get('all-my-accepted-orders')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(StandardResponse<{ data: Order[]; total: number }>),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Order),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: 'number',
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: 'number',
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: 'string',
+    description: 'Sorting field',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sorting order',
+  })
+  @ApiOperation({ summary: 'all orders i have acepted as a rider' })
+  async fetchAllMyOrder(
+    @Query() dto: PaginationDto,
+    @Req()req
+  ): Promise<StandardResponse<{ data: Order[]; total: number }>> {
+    return await this.riderService.FetchAllMyOrders(dto,req.user);
   }
 }

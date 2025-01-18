@@ -9,6 +9,7 @@ export abstract class OrderRepository {
   abstract findByID(id: string): Promise<Order | null>;
   abstract findAll(dto:PaginationDto): Promise<{data:Order[],total:number}>;
   abstract findAllRelatedToCustomer(customerID:string, dto:PaginationDto):Promise<{data:Order[],total:number}>
+  abstract findAllRelatedToRider(riderID:string, dto:PaginationDto):Promise<{data:Order[],total:number}>
   abstract remove(id: string): Promise<void>;
   abstract save(order: Order): Promise<Order>;
 }
@@ -42,7 +43,8 @@ export abstract class BidRepository {
   abstract findByID(id: string): Promise<Bid | null>;
   abstract findByIDForCustomer(id: string,customerId:string): Promise<Bid | null>;
   abstract fetchALLCustomer(dto:PaginationDto,customerID:string):Promise<{data:Bid[],total:number}>
-  abstract fetchALLRider(dto:PaginationDto,customer:string):Promise<{data:Bid[],total:number}>
+  abstract fetchALLRider(dto:PaginationDto,riderID:string):Promise<{data:Bid[],total:number}>
+  abstract fetchALL(dto:PaginationDto,):Promise<{data:Bid[],total:number}>
   abstract remove(id: string): Promise<void>;
   abstract update(id: number, item: Partial<Bid>): Promise<Bid>;
   abstract save(bid: Bid): Promise<Bid>;

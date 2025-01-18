@@ -2,6 +2,7 @@
 import { RiderEntity } from '../Entity/rider.entity';
 import { Rider } from 'src/Rider/Domain/rider';
 import { OrderMapper } from 'src/Order/Infrastructure/Persistence/Relational/Mapper/order.mapper';
+import { BidMapper } from 'src/Order/Infrastructure/Persistence/Relational/Mapper/bids.mapper';
 
 export class RiderMapper {
   static toDomain(raw: RiderEntity): Rider {
@@ -31,6 +32,9 @@ export class RiderMapper {
     domainEntity.accepted_orders = raw.accepted_orders
       ? raw.accepted_orders.map((order) => OrderMapper.toDomain(order))
       : [];
+      domainEntity.accepted_bids = raw.accepted_bids
+      ? raw.accepted_bids.map((bid) => BidMapper.toDomain(bid))
+      : [];
     return domainEntity;
   }
 
@@ -57,6 +61,15 @@ export class RiderMapper {
           OrderMapper.toPersistence(order),
         )
       : [];
+
+      persistenceEntity.accepted_bids = domainEntity.accepted_bids
+      ? domainEntity.accepted_bids.map((bid) =>
+          BidMapper.toPeristence(bid),
+        )
+      : [];
+
+
+      
     persistenceEntity.profilePicture = domainEntity.profilePicture;
     persistenceEntity.resetPasswordToken = domainEntity.resetPasswordToken;
     persistenceEntity.resetPasswordTokenExpTime =

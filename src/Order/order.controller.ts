@@ -7,10 +7,14 @@ import { CartItem } from "./Domain/order-cart-items";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { AddParcelToCartDto } from "./Dto/add-parcel-to-cart.dto";
 import { Order } from "./Domain/order";
+import { RoleGuard } from "src/Auth/Guard/role.guard";
+import { Roles } from "src/Auth/Decorator/role.decorator";
+import { Role } from "src/Enums/users.enum";
 
 @ApiTags('Order Service')
 @ApiBearerAuth()
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard,RoleGuard)
+@Roles(Role.CUSTOMER)
 @Controller({
   path: 'order/',
   version: '1.0',

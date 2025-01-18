@@ -226,6 +226,7 @@ export class OrderService {
             counteredBid_value: 0,
             counteredAT: undefined,
             bidTypeAccepted: undefined,
+            rider:undefined
           });
 
           return await this.bidRepository.save(initialBid);

@@ -15,6 +15,7 @@ import { VehicleEntity } from '../Infrastructure/Persistence/Relational/Entity/v
 import { BankEntity } from '../Infrastructure/Persistence/Relational/Entity/bank.entity';
 import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
 import { WalletEntity } from '../Infrastructure/Persistence/Relational/Entity/wallet.entity';
+import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
 
 export class Rider{
   @ApiProperty({ type: Number })
@@ -138,6 +139,9 @@ export class Rider{
   //accepted orders
   @ApiProperty({ type: () => [OrderEntity] })
   accepted_orders: OrderEntity[];
+
+  @ApiProperty({ type: () => [BidEntity] })
+  accepted_bids: BidEntity[];
 
     //wallet
     @ApiProperty({ type: () => WalletEntity })

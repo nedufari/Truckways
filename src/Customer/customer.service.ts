@@ -16,6 +16,7 @@ import { GeoLocationService } from 'src/utils/services/geolocation.service';
 import {
   BidRepository,
   OrderCartRepository,
+  OrderRepository,
 } from 'src/Order/Infrastructure/Persistence/all-order-repositories';
 import { OrderCart } from 'src/Order/Domain/order-cart';
 import { PaginationDto } from 'src/utils/shared-dto/pagination.dto';
@@ -28,6 +29,7 @@ import {
   BidTypeAccepted,
 } from 'src/Enums/order.enum';
 import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
+import { Order } from 'src/Order/Domain/order';
 @Injectable()
 export class CustomerService {
   constructor(
@@ -38,6 +40,7 @@ export class CustomerService {
     private notificationsService: NotificationsService,
     private geolocationService: GeoLocationService,
     private cartRepository: OrderCartRepository,
+    private orderRepository: OrderRepository,
   ) {}
 
   async fetchAllNotifications(
@@ -362,77 +365,6 @@ export class CustomerService {
     }
   }
 
-  // async CustomerAcceptOrDeclineBid(
-  //   customer: CustomerEntity,
-  //   bidId: string,
-  //   dto: BidActionDto,
-  // ): Promise<StandardResponse<boolean>> {
-  //   try {
-  //     const bid = await this.BidRepository.findByIDForCustomer(
-  //       bidId,
-  //       customer.customerID,
-  //     );
-  //     if (!bid) return this.responseService.notFound('Bid not found');
-
-  //     if (dto.doYouAccept === true) {
-  //       if (bid.bidStatus !== BidStatus.COUNTERED)
-  //         return this.responseService.badRequest(
-  //           'the bid has to be countered first before you can accept',
-  //         );
-  //       await this.BidRepository.update(bid.id, {
-  //         bidStatus: BidStatus.BID_ACCEPTED,
-  //         bidTypeAccepted: BidTypeAccepted.COUNTER,
-  //         acceptedAT: new Date(),
-  //       });
-
-  //       await this.notificationsService.create({
-  //         message: ` ${customer.name},  has accepted a bid .`,
-  //         subject: 'Bid Accepted',
-  //         account: customer.customerID, //saves when the user is created
-  //       });
-
-  //       //push  notification
-
-  //       // websocket event notification
-  //     }
-
-  //     if (dto.doYouAccept === false) {
-  //       if (bid.bidStatus !== BidStatus.COUNTERED)
-  //         return this.responseService.badRequest(
-  //           'the bid has to be countered first before you can decline it',
-  //         );
-  //       await this.BidRepository.update(bid.id, {
-  //         bidStatus: BidStatus.BID_DECLINED,
-  //         declinedAT: new Date(),
-  //       });
-
-  //       //notification
-  //       await this.notificationsService.create({
-  //         message: ` ${customer.name},  has declined a bid .`,
-  //         subject: 'Bid declined',
-  //         account: customer.customerID, //saves when the user is created
-  //       });
-
-  //       //push  notification
-
-  //       // websocket event notification
-  //     }
-
-  //     return this.responseService.success(
-  //       dto.doYouAccept === true
-  //         ? 'bid accepted successfully, please proceed to making payment'
-  //         : 'bid declined successfully, Please see other offers',
-  //       true,
-  //     );
-  //   } catch (error) {
-  //     console.error(error);
-  //     return this.responseService.internalServerError(
-  //       'Error Performing this bid action',
-  //       error.message,
-  //     );
-  //   }
-  // }
-
   //biding action
 
   async CustomerAcceptOrDeclineBid(
@@ -484,9 +416,20 @@ export class CustomerService {
           bidTypeAccepted: BidTypeAccepted.COUNTER,
           acceptedAT: new Date(),
         });
+        //update the rorder with rider and the value
+        const order = await this.orderRepository.findByID(bid.order.orderID);
+        order.accepted_bid = bid.counteredBid_value;
+        order.Rider = bid.rider;
+        await this.orderRepository.save(order);
 
         await this.notificationsService.create({
-          message: ` ${customer.name},  has accepted a bid .`,
+          message: ` ${bid.rider.name},  has accepted a bid placed by ${bid.order.customer.name} .`,
+          subject: 'Bid Accepted',
+          account: bid.rider.riderID,
+        });
+
+        await this.notificationsService.create({
+          message: ` ${bid.rider.name},  has declined your bid for order ${bid.order.orderID} .`,
           subject: 'Bid Accepted',
           account: customer.customerID,
         });
@@ -507,10 +450,17 @@ export class CustomerService {
           bidStatus: BidStatus.BID_DECLINED,
           bidTypeAccepted: BidTypeAccepted.COUNTER,
           declinedAT: new Date(),
+          rider: null,
         });
 
         await this.notificationsService.create({
-          message: ` ${customer.name},  has declined a bid .`,
+          message: ` ${bid.rider.name},  has declined a bid placed by ${bid.order.customer.name}.`,
+          subject: 'Bid Declined',
+          account: bid.rider.riderID,
+        });
+
+        await this.notificationsService.create({
+          message: ` ${bid.rider.name},  has declined your bid for order ${bid.order.orderID} .`,
           subject: 'Bid Declined',
           account: customer.customerID,
         });
@@ -527,5 +477,55 @@ export class CustomerService {
     };
 
     return actions[action]();
+  }
+
+  async FetchAllMyOrders(
+    dto: PaginationDto,
+    customer: CustomerEntity,
+  ): Promise<StandardResponse<{ data: Order[]; total: number }>> {
+    try {
+      const { data: orders, total } =
+        await this.orderRepository.findAllRelatedToCustomer(
+          customer.customerID,
+          dto,
+        );
+
+      return this.responseService.success(
+        orders.length ? 'Orders retrived successfully' : 'No orders yet',
+        {
+          data: orders,
+          total,
+          currentPage: dto.page,
+          pageSize: dto.limit,
+        },
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error fetching orders',
+        error.message,
+      );
+    }
+  }
+
+  async FetchOneOrder(
+    orderID: string,
+  ): Promise<StandardResponse<Order>> {
+    try {
+      const order = await this.orderRepository.findByID(
+        orderID,
+      );
+      if (!order) return this.responseService.notFound('Order not found');
+
+      return this.responseService.success(
+        'single order retrieved successfully',
+        order,
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error fetching one order',
+        error.message,
+      );
+    }
   }
 }

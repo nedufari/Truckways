@@ -25,6 +25,9 @@ import { LoginDto } from '../dto/login.dto';
 import { CustomerAuthService } from '../services/customer.auth.service';
 import { Customer } from 'src/Customer/Domain/customer';
 import { SignupDto } from '../dto/signup.dto';
+import { RoleGuard } from '../Guard/role.guard';
+import { Roles } from '../Decorator/role.decorator';
+import { Role } from 'src/Enums/users.enum';
 
 
 @ApiTags('Customer Auth')
@@ -37,7 +40,8 @@ export class CustomerAuthController {
   constructor(private readonly customerauthService: CustomerAuthService) {}
 
   @ApiBearerAuth()
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard,RoleGuard)
+  @Roles(Role.CUSTOMER)
   @Get('profile')
   @ApiOkResponse({
     schema: {

@@ -27,6 +27,9 @@ import { Customer } from 'src/Customer/Domain/customer';
 import { SignupDto } from '../dto/signup.dto';
 import { RiderAuthService } from '../services/rider.auth.service';
 import { Rider } from 'src/Rider/Domain/rider';
+import { RoleGuard } from '../Guard/role.guard';
+import { Roles } from '../Decorator/role.decorator';
+import { Role } from 'src/Enums/users.enum';
 
 
 @ApiTags('Rider Auth')
@@ -39,7 +42,8 @@ export class RiderAuthController {
   constructor(private readonly riderrauthService: RiderAuthService) {}
 
   @ApiBearerAuth()
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard,RoleGuard)
+  @Roles(Role.RIDER)
   @Get('profile')
   @ApiOkResponse({
     schema: {

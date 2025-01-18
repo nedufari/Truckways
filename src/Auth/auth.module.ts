@@ -16,6 +16,7 @@ import { GeneratorService } from 'src/utils/services/generator.service';
 import { RiderAuthService } from './services/rider.auth.service';
 import { RiderAuthController } from './controllers/rider.auth.controller';
 import { PersitenceRelationalOrderModule } from 'src/Order/Infrastructure/Persistence/Relational/persitence.relational.order.module';
+import { RoleGuard } from './Guard/role.guard';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { PersitenceRelationalOrderModule } from 'src/Order/Infrastructure/Persis
     ResponseService,
     MailService,
     JwtGuard,
+    RoleGuard,
     JwtStrategy,
     CustomerAuthService,
     RiderAuthService,

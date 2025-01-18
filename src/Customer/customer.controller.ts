@@ -36,10 +36,15 @@ import { Bid } from 'src/Order/Domain/bids';
 import { PaginationDto } from 'src/utils/shared-dto/pagination.dto';
 import { BidActionResult } from 'src/Enums/order.enum';
 import { BidActionDto } from 'src/utils/shared-dto/bid-action.dto';
+import { Order } from 'src/Order/Domain/order';
+import { RoleGuard } from 'src/Auth/Guard/role.guard';
+import { Roles } from 'src/Auth/Decorator/role.decorator';
+import { Role } from 'src/Enums/users.enum';
 
 @ApiTags('Customer')
 @ApiBearerAuth()
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard,RoleGuard)
+@Roles(Role.CUSTOMER)
 @Controller({
   path: 'customer/',
   version: '1',
@@ -77,7 +82,7 @@ export class CustomerController {
     type: 'number',
     description: 'Items per page',
   })
-  @ApiOperation({ summary: 'all notifications for a Planner' })
+  @ApiOperation({ summary: 'all notifications for a Customer' })
   async fetchAllnotificationsRelatedToaPlanner(
     @Query() dto: PaginationParams,
     @Req() req,
@@ -358,5 +363,81 @@ export class CustomerController {
       BidId,
       dto,
     );
+  }
+
+
+
+
+  @Get('one-order/:orderID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Order>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Order),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'fetch one order' })
+  async FetccOneOrder(
+    @Param('orderD') orderId: string,
+  ): Promise<StandardResponse<Order>> {
+    return await this.customerService.FetchOneOrder(orderId);
+  }
+
+
+
+  @Get('all-my-orders')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(StandardResponse<{ data: Order[]; total: number }>),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Order),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: 'number',
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: 'number',
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: 'string',
+    description: 'Sorting field',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sorting order',
+  })
+  @ApiOperation({ summary: 'all orders i have placed' })
+  async fetchAllMyOrder(
+    @Query() dto: PaginationDto,
+    @Req()req
+  ): Promise<StandardResponse<{ data: Order[]; total: number }>> {
+    return await this.customerService.FetchAllMyOrders(dto,req.user);
   }
 }

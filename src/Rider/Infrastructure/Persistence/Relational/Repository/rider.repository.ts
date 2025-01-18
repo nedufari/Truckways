@@ -29,6 +29,7 @@ export class RiderRelationalRepository implements RiderRepository {
   async profile(rider: Rider): Promise<Rider> {
     const riderProfile = await this.riderEntityRepository.findOne({
       where: { riderID: rider.riderID },
+      relations: ['wallet', 'vehicle', 'bank_details'],
     });
     return riderProfile ? RiderMapper.toDomain(riderProfile) : null;
   }
@@ -66,7 +67,7 @@ export class RiderRelationalRepository implements RiderRepository {
       skip: (page - 1) * limit,
       take: limit,
       order: { [sortBy]: sortOrder },
-      relations: ['wallet', ''],
+      relations: ['wallet', 'vehicle'],
     });
     const riders = result.map(RiderMapper.toDomain);
     return { data: riders, total };
@@ -206,15 +207,13 @@ export class BankRelationalRepository implements BankRepository {
 
   async save(bank: Bank): Promise<Bank> {
     const persistenceBank = BankMapper.toPersistence(bank);
-    const savedBank = await this.bankEntityRepository.save(
-      persistenceBank,
-      { reload: true },
-    );
+    const savedBank = await this.bankEntityRepository.save(persistenceBank, {
+      reload: true,
+    });
 
     return BankMapper.toDomain(savedBank);
   }
 }
-
 
 //wallet
 export class WalletRelationalRepository implements WalletRepository {
@@ -225,7 +224,8 @@ export class WalletRelationalRepository implements WalletRepository {
 
   async create(wallet: Wallet): Promise<Wallet> {
     const persistenceWallet = WalletMapper.toPersistence(wallet);
-    const savedWallet = await this.walletEntityRepository.save(persistenceWallet);
+    const savedWallet =
+      await this.walletEntityRepository.save(persistenceWallet);
     return WalletMapper.toDomain(savedWallet);
   }
 
@@ -273,6 +273,3 @@ export class WalletRelationalRepository implements WalletRepository {
     return WalletMapper.toDomain(savedWallet);
   }
 }
-
-
-

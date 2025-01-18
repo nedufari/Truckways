@@ -2,6 +2,7 @@ import { ApiProperty } from "@nestjs/swagger";
 import { IsDate, IsEnum, IsNumber, IsNumberString, IsString } from "class-validator";
 import { BidStatus, BidTypeAccepted } from "src/Enums/order.enum";
 import { OrderEntity } from "../Infrastructure/Persistence/Relational/Entity/order.entity";
+import { RiderEntity } from "src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity";
 
 export class Bid {
     @ApiProperty({ type: Number })
@@ -46,4 +47,8 @@ export class Bid {
   
     @ApiProperty({ type: () => OrderEntity })
     order: OrderEntity;
+
+
+  @ApiProperty({type:()=> RiderEntity})
+  rider:RiderEntity
   }

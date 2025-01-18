@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { BidStatus, BidTypeAccepted } from 'src/Enums/order.enum';
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { OrderEntity } from './order.entity';
+import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity';
 
 @Entity({ name: 'bids' })
 export class BidEntity {
@@ -48,4 +49,8 @@ export class BidEntity {
   @ApiProperty({ type: () => OrderEntity })
   @ManyToOne(() => OrderEntity, (order) => order.bid, { nullable: true }) // Many-to-one relationship with orders// This is optional; it creates a foreign key column in the BidEntity table
   order: OrderEntity;
+
+  @ApiProperty({type:()=> RiderEntity})
+  @ManyToOne(()=>RiderEntity, (rider)=>rider.accepted_bids)
+  rider:RiderEntity
 }
