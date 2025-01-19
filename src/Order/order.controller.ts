@@ -148,5 +148,35 @@ export class OrderController{
     ): Promise<StandardResponse<Order>> {
       return await this.orderService.PlaceOrder(req.user,cartID);
     }
+
+
+
+    @Post('initialize-order-payment/:orderID')
+    @ApiOkResponse({
+      schema: {
+        allOf: [
+          { $ref: getSchemaPath(StandardResponse<any>) },
+          {
+            properties: {
+              payload: {
+                $ref: getSchemaPath(Order),
+              },
+            },
+          },
+        ],
+      },
+    })
+    @ApiOperation({ summary: 'initialize order payment with paystack' })
+    async PayForOrder(
+      @Req() req,
+      @Param('orderID')orderID:string,
+   
+      
+    ): Promise<StandardResponse<any>> {
+      return await this.orderService.PayForOrder(req.user,orderID);
+    }
     
 }
+
+
+//TrkOBMvhTw

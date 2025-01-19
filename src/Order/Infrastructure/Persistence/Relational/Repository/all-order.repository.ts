@@ -47,7 +47,7 @@ export class OrderRelationalRepository implements OrderRepository {
       skip: (page - 1) * limit,
       take: limit,
       order: { [sortBy]: sortOrder },
-      relations: ['customer', 'bid', 'rider', 'rider.vehicle', 'items'],
+      relations: ['customer', 'bid', 'Rider', 'Rider.vehicle', 'items'],
     });
     const orders = result.map(OrderMapper.toDomain);
     return { data: orders, total };
@@ -63,7 +63,7 @@ export class OrderRelationalRepository implements OrderRepository {
       skip: (page - 1) * limit,
       take: limit,
       order: { [sortBy]: sortOrder },
-      relations: ['customer', 'bid', 'rider', 'rider.vehicle', 'items'],
+      relations: ['customer', 'bid', 'Rider', 'Rider.vehicle', 'items'],
     });
     const orders = result.map(OrderMapper.toDomain);
     return { data: orders, total };
@@ -79,7 +79,7 @@ export class OrderRelationalRepository implements OrderRepository {
       skip: (page - 1) * limit,
       take: limit,
       order: { [sortBy]: sortOrder },
-      relations: ['customer', 'bid', 'rider', 'rider.vehicle', 'items'],
+      relations: ['customer', 'bid', 'Rider', 'Rider.vehicle', 'items'],
     });
     const orders = result.map(OrderMapper.toDomain);
     return { data: orders, total };

@@ -13,6 +13,7 @@ import { OrderModule } from './Order/order.module';
 import authConfig from './Auth/config/auth.config';
 import appConfig from './config/app.config';
 import { CloudinaryConfig } from './utils/cloudinary/cloudinary.config';
+import { PaystackModule } from './utils/shared-modules/payment.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { CloudinaryConfig } from './utils/cloudinary/cloudinary.config';
     CustomerModule,
     RiderModule,
     OrderModule,
+    PaystackModule
   ],
   controllers: [AppController],
   providers: [AppService,CloudinaryConfig],

@@ -29,4 +29,8 @@ export class Order {
 
   @ApiProperty({ type: () => CustomerEntity })
   customer: CustomerEntity;
+
+  @ApiProperty()
+  createdAT:Date
+
 }

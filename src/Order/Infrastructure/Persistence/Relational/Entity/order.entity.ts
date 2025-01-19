@@ -43,6 +43,10 @@ export class OrderEntity {
   @ApiProperty({ type: () => CustomerEntity })
   @ManyToOne(() => CustomerEntity, (owner) => owner.my_orders)
   customer: CustomerEntity;
+
+  @ApiProperty()
+  @Column({nullable:true, type:'timestamp'})
+  createdAT:Date
 }
 
 @Entity({ name: 'order-Items' })

@@ -10,6 +10,8 @@ import { PersitenceRelationalOrderModule } from './Infrastructure/Persistence/Re
 import { GeoLocationService } from 'src/utils/services/geolocation.service';
 import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
+import { PaystackService } from 'src/Payment/paystack/paystack.service';
+import { CustomAxiosService } from 'src/Payment/paystack/custom.axios-service';
 
 @Module({
   imports: [
@@ -23,7 +25,9 @@ import { OrderController } from './order.controller';
     JwtService,
     GeneratorService,
     GeoLocationService,
-    OrderService
+    OrderService,
+    PaystackService,
+    CustomAxiosService,
   ],
   controllers: [OrderController],
 })

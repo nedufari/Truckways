@@ -19,6 +19,8 @@ import { CustomerEntity } from 'src/Customer/Infrastructure/Persistence/Relation
 import { Order } from './Domain/order';
 import { BidStatus } from 'src/Enums/order.enum';
 import { Injectable } from '@nestjs/common';
+import { PaystackCustomer } from 'src/Payment/paystack/paystack-standard-response';
+import { PaystackService } from 'src/Payment/paystack/paystack.service';
 
 @Injectable()
 export class OrderService {
@@ -33,6 +35,7 @@ export class OrderService {
     private generatorService: GeneratorService,
     private cloudinaryService: CloudinaryService,
     private geolocationService: GeoLocationService,
+    private paystackService: PaystackService,
   ) {}
 
   //add items to cart
@@ -175,6 +178,7 @@ export class OrderService {
         bid: [],
         Rider: undefined,
         customer: customer,
+        createdAT:new Date(),
         items: [], //will update after creating the items
       });
       console.log('order', order);
@@ -226,7 +230,7 @@ export class OrderService {
             counteredBid_value: 0,
             counteredAT: undefined,
             bidTypeAccepted: undefined,
-            rider:undefined
+            rider: undefined,
           });
 
           return await this.bidRepository.save(initialBid);
@@ -265,8 +269,55 @@ export class OrderService {
     }
   }
 
+  //pay for agreed orders and bids.
+  async PayForOrder(
+    customer: CustomerEntity,
+    orderId: string,
+  ): Promise<StandardResponse<any>> {
+    try {
+      const order = await this.orderRepository.findByID(orderId);
+      if (!order) return this.responseService.notFound('order not found');
 
-  //pay for agreed orders and bids. 
-  
+      if (order.accepted_bid === null)
+        return this.responseService.badRequest(
+          'The bid for this order has not being finalized yet, so you cannot proceed with payment',
+        );
 
+      //initialize payment
+      const PaystackCustomer: PaystackCustomer = {
+        email: customer.email,
+        full_name: customer.name,
+        phone: customer.phoneNumber,
+      };
+
+      const paymentResponse = await this.paystackService.PayForOrder(
+        Number(order.accepted_bid),
+        PaystackCustomer,
+        order,
+      );
+      console.log (order.accepted_bid)
+
+      if (paymentResponse) {
+        await this.notificationService.create({
+          subject: 'Order Payment Initialized',
+          message: `Order Payment initialized successfully`,
+          account: customer.customerID,
+        });
+      }
+
+      return this.responseService.success('Payment successfully Initiated', {
+        paymentResponse: paymentResponse.data,
+      });
+    } catch (error) {
+      await this.notificationService.create({
+        subject: 'Payment Error',
+        message: `failed to process Payment for Order`,
+        account: customer.customerID,
+      });
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error while initializing order Payment',
+      );
+    }
+  }
 }
