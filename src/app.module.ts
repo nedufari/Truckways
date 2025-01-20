@@ -15,7 +15,7 @@ import appConfig from './config/app.config';
 import { CloudinaryConfig } from './utils/cloudinary/cloudinary.config';
 import { PaystackModule } from './utils/shared-modules/payment.module';
 import { EventsGateway } from './utils/gateway/websocket.gateway';
-import { PushNotificationsService } from './utils/services/push-notification.service';
+
 
 @Module({
   imports: [

@@ -12,7 +12,7 @@ import { PersitenceRelationalOrderModule } from 'src/Order/Infrastructure/Persis
 import { RiderService } from './rider.service';
 import { RiderController } from './rider.controller';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
-import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+//import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 import { RiderEntity } from './Infrastructure/Persistence/Relational/Entity/rider.entity';
 
 @Module({
@@ -30,7 +30,7 @@ import { RiderEntity } from './Infrastructure/Persistence/Relational/Entity/ride
     GeoLocationService,
     RiderService,
     EventsGateway,
-    PushNotificationsService
+   // PushNotificationsService
 
   ],
   controllers: [RiderController],

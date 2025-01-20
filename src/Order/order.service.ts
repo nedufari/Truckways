@@ -22,7 +22,7 @@ import { Injectable } from '@nestjs/common';
 import { PaystackCustomer } from 'src/Payment/paystack/paystack-standard-response';
 import { PaystackService } from 'src/Payment/paystack/paystack.service';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
-import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+//import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 
 @Injectable()
 export class OrderService {
@@ -39,7 +39,7 @@ export class OrderService {
     private geolocationService: GeoLocationService,
     private paystackService: PaystackService,
     private readonly eventsGateway: EventsGateway,
-    private readonly pushnotificationsService:PushNotificationsService
+    //private readonly pushnotificationsService:PushNotificationsService
   ) {}
 
   //add items to cart
@@ -255,7 +255,7 @@ export class OrderService {
 
 
           //push notifications 
-          this.pushnotificationsService.notifyAllRidersOfNewOrder(savedOrder)
+          //this.pushnotificationsService.notifyAllRidersOfNewOrder(savedOrder)
 
 
           return savedBid

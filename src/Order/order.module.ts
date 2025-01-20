@@ -13,7 +13,7 @@ import { OrderController } from './order.controller';
 import { PaystackService } from 'src/Payment/paystack/paystack.service';
 import { CustomAxiosService } from 'src/Payment/paystack/custom.axios-service';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
-import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+//import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity';
 
 @Module({
@@ -32,7 +32,7 @@ import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Ent
     PaystackService,
     CustomAxiosService,
     EventsGateway,
-    PushNotificationsService
+    //PushNotificationsService
   ],
   controllers: [OrderController],
 })

@@ -40,7 +40,7 @@ import {
 import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
 import { Order } from 'src/Order/Domain/order';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
-import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+//import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
 export class RiderService {
   constructor(
@@ -56,7 +56,7 @@ export class RiderService {
     private generatorService: GeneratorService,
     private bidRepository: BidRepository,
     private readonly eventsGateway: EventsGateway,
-    private readonly pushNotificationService:PushNotificationsService
+    //private readonly pushNotificationService:PushNotificationsService
   ) {}
 
   //notifications
@@ -678,15 +678,13 @@ export class RiderService {
         account: bid.rider.riderID,
       });
 
-      //push notification
+    
        //push notification
-       this.pushNotificationService.sendPushNotification(
-        bid.order.customer.deviceToken,
-        'Bid Countered',
-        'openning bid countered'
-
-
-      )
+      //  this.pushNotificationService.sendPushNotification(
+      //   bid.order.customer.deviceToken,
+      //   'Bid Countered',
+      //   'openning bid countered'
+      // )
 
      
 

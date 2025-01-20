@@ -31,7 +31,7 @@ import {
 import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
 import { Order } from 'src/Order/Domain/order';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
-import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+//import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
 export class CustomerService {
   constructor(
@@ -44,7 +44,7 @@ export class CustomerService {
     private cartRepository: OrderCartRepository,
     private orderRepository: OrderRepository,
     private readonly eventsGateway: EventsGateway,
-    private readonly pushNotificationService:PushNotificationsService,
+    //private readonly pushNotificationService:PushNotificationsService,
   ) {}
 
   async fetchAllNotifications(
@@ -460,13 +460,11 @@ export class CustomerService {
         });
 
         //push notification
-        this.pushNotificationService.sendPushNotification(
-          bid.rider.deviceToken,
-          'Bid Accepted',
-          'counter bid accepted'
-
-
-        )
+        // this.pushNotificationService.sendPushNotification(
+        //   bid.rider.deviceToken,
+        //   'Bid Accepted',
+        //   'counter bid accepted'
+        // )
 
         
 
@@ -510,15 +508,13 @@ export class CustomerService {
           account: customer.customerID,
         });
 
-        //push notification
+        
          //push notification
-         this.pushNotificationService.sendPushNotification(
-          bid.rider.deviceToken,
-          'Bid Declined',
-          'counter bid declined'
-
-
-        )
+        //  this.pushNotificationService.sendPushNotification(
+        //   bid.rider.deviceToken,
+        //   'Bid Declined',
+        //   'counter bid declined'
+        // )
 
       
         return {
