@@ -52,9 +52,9 @@ export class StandardResponse<T> {
   public message: string;
 
   public status: HttpStatus;
-  @ApiProperty({ type: 'object' })
+  @ApiProperty({  })
   public payload?: T;
-  @ApiProperty({ type: 'object' })
+  @ApiProperty({  })
   public errors?: any;
 
   constructor(
