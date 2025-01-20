@@ -9,6 +9,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { BidEntity } from './bids.entity';
+import { PaymentStatus } from 'src/Enums/order.enum';
 
 @Entity({ name: 'orders' })
 export class OrderEntity {
@@ -19,6 +20,10 @@ export class OrderEntity {
   @ApiProperty({ type: String })
   @Column({ nullable: true })
   orderID: string;
+
+  @ApiProperty({enum:PaymentStatus})
+  @Column({nullable:true, type:'enum', enum:PaymentStatus})
+  paymentStatus:PaymentStatus
 
   @ApiProperty({ type: Number })
   @Column('numeric', { nullable: true })

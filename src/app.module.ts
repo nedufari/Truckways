@@ -14,6 +14,8 @@ import authConfig from './Auth/config/auth.config';
 import appConfig from './config/app.config';
 import { CloudinaryConfig } from './utils/cloudinary/cloudinary.config';
 import { PaystackModule } from './utils/shared-modules/payment.module';
+import { EventsGateway } from './utils/gateway/websocket.gateway';
+import { PushNotificationsService } from './utils/services/push-notification.service';
 
 @Module({
   imports: [
@@ -28,6 +30,7 @@ import { PaystackModule } from './utils/shared-modules/payment.module';
     PaystackModule
   ],
   controllers: [AppController],
-  providers: [AppService,CloudinaryConfig],
+  providers: [AppService,CloudinaryConfig,EventsGateway],
+  exports: [EventsGateway]
 })
 export class AppModule {}

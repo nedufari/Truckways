@@ -4,6 +4,7 @@ import { OrderItemsEntity } from '../Infrastructure/Persistence/Relational/Entit
 import { BidEntity } from '../Infrastructure/Persistence/Relational/Entity/bids.entity';
 import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity';
 import { CustomerEntity } from 'src/Customer/Infrastructure/Persistence/Relational/Entity/customer.entity';
+import { PaymentStatus } from 'src/Enums/order.enum';
 
 export class Order {
   @ApiProperty({ type: Number })
@@ -32,5 +33,8 @@ export class Order {
 
   @ApiProperty()
   createdAT:Date
+
+  @ApiProperty({enum:PaymentStatus})
+  paymentStatus:PaymentStatus
 
 }

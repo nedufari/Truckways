@@ -30,6 +30,8 @@ import {
 } from 'src/Enums/order.enum';
 import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
 import { Order } from 'src/Order/Domain/order';
+import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
+import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
 export class CustomerService {
   constructor(
@@ -41,6 +43,8 @@ export class CustomerService {
     private geolocationService: GeoLocationService,
     private cartRepository: OrderCartRepository,
     private orderRepository: OrderRepository,
+    private readonly eventsGateway: EventsGateway,
+    private readonly pushNotificationService:PushNotificationsService,
   ) {}
 
   async fetchAllNotifications(
@@ -389,6 +393,14 @@ export class CustomerService {
       }
 
       const action = dto.doYouAccept ? BidAction.ACCEPT : BidAction.DECLINE;
+
+      //start websocket conversation between customer and rider 
+      this.eventsGateway.startconversation(
+        bid.order.orderID,
+        bid.rider.riderID,
+        customer.customerID
+      )
+
       const result = await this.processBidAction(action, bid, customer);
 
       return this.responseService.success(result.message, {
@@ -422,6 +434,19 @@ export class CustomerService {
         order.Rider = bid.rider;
         await this.orderRepository.save(order);
 
+        //emit websocket for accepted counter bid 
+        this.eventsGateway.emitToconversation(
+          bid.order.orderID,
+          'acceptCounterBid',
+          {
+            orderId:bid.order.orderID,
+            bidStatus:true,
+            acceptedAmount:bid.counteredBid_value,
+            timestamp: new Date().getTime()
+          }
+
+        )
+
         await this.notificationsService.create({
           message: ` ${bid.rider.name},  has accepted a bid placed by ${bid.order.customer.name} .`,
           subject: 'Bid Accepted',
@@ -435,8 +460,15 @@ export class CustomerService {
         });
 
         //push notification
+        this.pushNotificationService.sendPushNotification(
+          bid.rider.deviceToken,
+          'Bid Accepted',
+          'counter bid accepted'
 
-        //emit websocket event
+
+        )
+
+        
 
         return {
           success: true,
@@ -453,6 +485,19 @@ export class CustomerService {
           rider: null,
         });
 
+
+         // Emit WebSocket event for declined counter bid
+         this.eventsGateway.emitToconversation(
+          bid.order.orderID,
+          'declineCounterBid',
+          {
+            orderId: bid.order.orderID,
+            bidstatus: false,
+            timestamp: new Date().getTime(),
+          }
+        );
+
+
         await this.notificationsService.create({
           message: ` ${bid.rider.name},  has declined a bid placed by ${bid.order.customer.name}.`,
           subject: 'Bid Declined',
@@ -466,9 +511,16 @@ export class CustomerService {
         });
 
         //push notification
+         //push notification
+         this.pushNotificationService.sendPushNotification(
+          bid.rider.deviceToken,
+          'Bid Declined',
+          'counter bid declined'
 
-        //emit websocket event
 
+        )
+
+      
         return {
           success: true,
           message: 'Bid declined successfully, please see other offers',

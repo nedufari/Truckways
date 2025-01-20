@@ -29,7 +29,7 @@ export class RiderRelationalRepository implements RiderRepository {
   async profile(rider: Rider): Promise<Rider> {
     const riderProfile = await this.riderEntityRepository.findOne({
       where: { riderID: rider.riderID },
-      relations: ['wallet', 'vehicle', 'bank_details'],
+      relations: ['my_wallet', 'vehicle', 'bank_details'],
     });
     return riderProfile ? RiderMapper.toDomain(riderProfile) : null;
   }

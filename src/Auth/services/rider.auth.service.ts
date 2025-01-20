@@ -19,6 +19,8 @@ import { Role } from 'src/Enums/users.enum';
 import { VerifficationType } from 'src/Enums/verification.enum';
 import { RiderRepository } from 'src/Rider/Infrastructure/Persistence/rider-repository';
 import { Rider } from 'src/Rider/Domain/rider';
+import { devicetokenDto } from '../dto/devicetoken.dto';
+import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity';
 
 @Injectable()
 export class RiderAuthService {
@@ -32,7 +34,7 @@ export class RiderAuthService {
   ) {}
 
   // profile / me
-  async Profile(rider: Rider): Promise<StandardResponse<Rider>> {
+  async Profile(rider: RiderEntity): Promise<StandardResponse<Rider>> {
     try {
       const profile = await this.riderRepository.profile(rider);
       return this.responseService.success(
@@ -44,6 +46,29 @@ export class RiderAuthService {
     } catch (error) {
       return this.responseService.internalServerError(
         'Error fetching Rider Profile',
+        error.message,
+      );
+    }
+  }
+
+  async deviceToken(
+    rider: RiderEntity,
+    dto: devicetokenDto,
+  ): Promise<StandardResponse<Rider>> {
+    try {
+      const profile = await this.riderRepository.findByID(rider.id);
+      if (!profile) return this.responseService.notFound('user not found');
+      profile.deviceToken = dto.deviceToken;
+
+      const savedProfile = await this.riderRepository.save(profile);
+
+      return this.responseService.success(
+        'Device token Added successfully',
+        savedProfile,
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error adding Device token',
         error.message,
       );
     }
@@ -80,8 +105,8 @@ export class RiderAuthService {
       await this.mailService.VerifyOtpMail(email, otpCode);
 
       const user = await this.riderRepository.create({
-          email,
-          name,
+          email:email,
+          name:name,
           phoneNumber: undefined,
           password: hashpassword,
           riderID: riderIdcustom,

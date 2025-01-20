@@ -1,23 +1,13 @@
-// import { Body, Controller, Post } from "@nestjs/common";
-// import { Raw } from "typeorm";
-// import { PaystackWebhookService } from "./webhook.service";
+import { Controller, Post, Res, Body, Headers, Req } from '@nestjs/common';
+import { PaystackWebhookService } from './webhook.service';
+import { Request, Response } from 'express';
 
-// // Controller to handle webhook
-// @Controller('webhooks')
-// export class PaystackWebhookController {
-//   constructor(private readonly webhookService: PaystackWebhookService) {}
+@Controller('paystack-webhook')
+export class WebhookController {
+  constructor(private readonly webhookService: PaystackWebhookService) {}
 
-//   // @Post('paystack')
-//   // async handlePaystackWebhook(
-//   //   @new Headers('x-paystack-signature') signature: string,
-//   //   @Raw() rawBody: Buffer,
-//   //   @Body() body: PaystackEventData,
-//   // ) {
-//   //   await this.webhookService.handleWebhook(
-//   //     signature,
-//   //     rawBody.toString(),
-//   //     body,
-//   //   );
-//   //   return { received: true };
-//   // }
-// }
+  @Post('/')
+  async handleWebhook(@Res() res: Response, @Req() req: Request) {
+    return await this.webhookService.handleWebhook(req, res);
+  }
+}

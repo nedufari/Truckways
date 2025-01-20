@@ -19,6 +19,7 @@ export class OrderMapper {
     domainEntity.customer = raw.customer;
     domainEntity.orderID = raw.orderID;
     domainEntity.createdAT = raw.createdAT;
+    domainEntity.paymentStatus = raw.paymentStatus
     return domainEntity;
   }
 
@@ -38,6 +39,7 @@ export class OrderMapper {
       : [];
     persistenceEntity.orderID = domainEntity.orderID;
     persistenceEntity.createdAT = domainEntity.createdAT;
+    persistenceEntity.paymentStatus = domainEntity.paymentStatus
     return persistenceEntity;
   }
 }

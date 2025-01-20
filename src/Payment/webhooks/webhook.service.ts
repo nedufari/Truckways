@@ -1,135 +1,171 @@
-// import { Injectable } from '@nestjs/common';
-// import { createHmac } from 'crypto';
-// import { PlannerRepository } from 'src/User/Planner/infrastructure/persistence/planner-repository';
-// import { PaystackService } from '../paystack/paystack.service';
-// import { NotificationsService } from 'src/utils/services/notifications.service';
+import { Injectable } from '@nestjs/common';
+import { createHmac } from 'crypto';
+import { PaystackService } from '../paystack/paystack.service';
+import { NotificationsService } from 'src/utils/services/notifications.service';
+import { OrderRepository } from 'src/Order/Infrastructure/Persistence/all-order-repositories';
+import * as crypto from 'crypto';
+import { ConfigService } from '@nestjs/config';
+import { Request, Response } from 'express';
+import { PaymentStatus } from 'src/Enums/order.enum';
 
-// interface PaystackEventData {
-//   event: string;
-//   data: {
-//     reference: string;
-//     status: string;
-//     metadata: {
-//       type: string;
-//       customer_fields: {
-//         fullname: string;
-//         phone: string;
-//       };
-//       event_details?: {
-//         startDate: string;
-//         endDate: string;
-//       };
-//     };
-//     customer: {
-//       email: string;
-//     };
-//   };
-// }
+interface PaystackEventData {
+  event: string;
+  data: {
+    reference: string;
+    status: string;
+    metadata: {
+      type: string;
+      customer_fields: {
+        fullname: string;
+        phone: string;
+      };
+      order_details?: {
+        orderID: string;
+        id: number;
+      };
+    };
+    customer: {
+      email: string;
+    };
+  };
+}
 
-// @Injectable()
-// export class PaystackWebhookService {
-//   constructor(
-//     private readonly plannerRepository: PlannerRepository,
-//     private readonly paystackService: PaystackService,
-//     private readonly notificationsService: NotificationsService,
-//   ) {}
+@Injectable()
+export class PaystackWebhookService {
+  constructor(
+    private readonly orderRepository: OrderRepository,
+    private readonly paystackService: PaystackService,
+    private readonly notificationsService: NotificationsService,
+    private readonly configService: ConfigService,
+  ) {}
 
-//   private verifyWebhookSignature(signature: string, payload: string): boolean {
-//     const hash = createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
-//       .update(payload)
-//       .digest('hex');
-//     return hash === signature;
-//   }
+  async handleWebhook(req: Request, res: Response): Promise<void> {
+    try {
+      const body = req.body;
+      const signature = req.headers['x-paystack-signature'];
 
-//   async handleWebhook(
-//     signature: string,
-//     payload: string,
-//     rawData: PaystackEventData,
-//   ): Promise<void> {
-//     // Verify webhook signature
-//     if (!this.verifyWebhookSignature(signature, payload)) {
-//       throw new Error('Invalid webhook signature');
-//     }
+      if (!signature || typeof signature !== 'string') {
+        console.error('Missing or invalid Paystack signature');
+        res.sendStatus(400);
+        return;
+      }
 
-//     const { event, data } = rawData;
+      const hash = crypto
+        .createHmac(
+          'sha512',
+          this.configService.get<string>('PAYSTACK_TEST_SECRET'),
+        )
+        .update(JSON.stringify(body))
+        .digest('hex');
 
-//     // Handle different webhook events
-//     switch (event) {
-//       case 'charge.success':
-//         await this.handleSuccessfulCharge(data);
-//         break;
+      if (hash !== signature) {
+        console.error('Invalid Paystack webhook signature');
+        res.sendStatus(401);
+        return;
+      }
 
-//       case 'transfer.success':
-//         await this.handleSuccessfulTransfer(data);
-//         break;
+      const event = body as PaystackEventData;
 
-//       // Add more event handlers as needed
-//     }
-//   }
+      switch (event.event) {
+        case 'charge.success':
+          await this.handleSuccessfulCharge(event.data, event.data.reference);
+          break;
+        case 'transfer.success':
+          await this.handleSuccessfulTransfer(event.data);
+          break;
+        default:
+          console.log('Unsupported Paystack webhook event:', event.event);
+      }
 
-//   private async handleSuccessfulCharge(
-//     data: PaystackEventData['data'],
-//   ): Promise<void> {
-//     // Only process pay-per-event payments
-//     if (data.metadata?.type !== 'pay_per_event') {
-//       return;
-//     }
+      res.sendStatus(200);
+    } catch (error) {
+      console.error('Error handling Paystack webhook:', error);
+      // Don't expose internal errors to the client
+      res.sendStatus(500);
+    }
+  }
+  private async handleSuccessfulCharge(
+    data: PaystackEventData['data'],
+    paymentReference: string,
+  ): Promise<void> {
+    // Only process pay-per-event payments
+    if (data.metadata?.type !== 'truckways_order_delivery_payment') {
+      console.log('Skipping non-delivery payment event');
+      return;
+    }
 
-//     try {
-//       // Verify the transaction
-//       const verificationResponse = await this.paystackService.verifyTransaction(
-//         data.reference,
-//       );
+    try {
+      // Verify the transaction
+      const verificationResponse = await this.paystackService.verifyTransaction(
+        data.reference,
+      );
 
-//       if (!verificationResponse.data.status) {
-//         throw new Error('Transaction verification failed');
-//       }
+      if (!verificationResponse?.data?.status) {
+        throw new Error(
+          `Transaction verification failed for reference: ${data.reference}`,
+        );
+      }
 
-//       // Find the planner by email
-//       const planner = await this.plannerRepository.findbyEmail(
-//         data.customer.email,
-//       );
+      // Find the order
+      const order = await this.orderRepository.findByID(paymentReference);
 
-//       if (!planner) {
-//         throw new Error('Planner not found');
-//       }
+      if (!order) {
+        throw new Error(`Order not found for reference: ${paymentReference}`);
+      }
 
-//       // Get event dates from metadata
-//       const startDate = data.metadata.event_details?.startDate
-//         ? new Date(data.metadata.event_details.startDate)
-//         : new Date();
+      // Update order status
+      order.paymentStatus = PaymentStatus.SUCCESFUL;
+      await this.orderRepository.save(order);
 
-//       const endDate = data.metadata.event_details?.endDate
-//         ? new Date(data.metadata.event_details.endDate)
-//         : new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000); // Default 7 days if not specified
+      // Send success notification to customer
+      await this.notificationsService.create({
+        subject: 'Order Payment Successful',
+        message:
+          'Your payment was successful and your order is being processed',
+        account: order.customer.customerID,
+      });
+    } catch (error) {
+      console.error('Error processing payment:', error);
 
-//       // Update planner with temporary permissions
-//       await this.plannerRepository.update(planner.id, {
-//         tempPermissions: true,
-//         tempPermissionsEndsAt: endDate,
-//       });
+      try {
+        // Find the order again to get customer ID
+        const order = await this.orderRepository.findByID(paymentReference);
 
-//       // Send notification
-//       await this.notificationsService.create({
-//         subject: 'Event Payment Successful',
-//         message: `Your payment was successful. You now have premium access for your event from ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}.`,
-//         account: planner.plannerID,
-//       });
-//     } catch (error) {
-//       // Log error and notify admin
-//       console.error('Error processing pay-per-event payment:', error);
-//       await this.notificationsService.create({
-//         subject: 'Payment Processing Error',
-//         message: `Error processing payment for reference: ${data.reference}. Error: ${error.message}`,
-//         account: 'admin', // Send to admin account
-//       });
-//     }
-//   }
+        if (order) {
+          // Send error notification to customer
+          await this.notificationsService.create({
+            subject: 'Payment Processing Failed',
+            message:
+              'We encountered an issue processing your payment. Please contact our support team for assistance.',
+            account: order.customer.customerID,
+          });
 
-//   private async handleSuccessfulTransfer(
-//     data: PaystackEventData['data'],
-//   ): Promise<void> {
-//     // Handle transfer success if needed
-//     // This could be used for refunds or other transfer-related functionality
-//   }
-// }
+          // Send detailed error notification to admin
+          await this.notificationsService.create({
+            subject: 'Payment Processing Error',
+            message: `Error processing payment for reference: ${data.reference}. Customer ID: ${order.customer.customerID}. Error: ${error.message}`,
+            account: 'admin',
+          });
+        } else {
+          // If order not found, still notify admin
+          await this.notificationsService.create({
+            subject: 'Payment Processing Error',
+            message: `Error processing payment for reference: ${data.reference}. Order not found. Error: ${error.message}`,
+            account: 'admin',
+          });
+        }
+      } catch (notificationError) {
+        console.error('Failed to send notifications:', notificationError);
+      }
+
+      // Re-throw the error to be handled by the main webhook handler
+      throw error;
+    }
+  }
+  private async handleSuccessfulTransfer(
+    data: PaystackEventData['data'],
+  ): Promise<void> {
+    // Implement transfer success handling logic here
+    console.log('Transfer success event received:', data.reference);
+  }
+}

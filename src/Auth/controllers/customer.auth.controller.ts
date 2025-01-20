@@ -28,6 +28,7 @@ import { SignupDto } from '../dto/signup.dto';
 import { RoleGuard } from '../Guard/role.guard';
 import { Roles } from '../Decorator/role.decorator';
 import { Role } from 'src/Enums/users.enum';
+import { devicetokenDto } from '../dto/devicetoken.dto';
 
 
 @ApiTags('Customer Auth')
@@ -61,6 +62,30 @@ export class CustomerAuthController {
   //@HttpCode(HttpStatus.OK)
   async profile(@Req() req): Promise<StandardResponse<Customer>> {
     return await this.customerauthService.Profile(req.user);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard,RoleGuard)
+  @Roles(Role.CUSTOMER)
+  @Patch('add-deviceToken')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Customer>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Customer),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'add device token (guarded)' })
+  //@HttpCode(HttpStatus.OK)
+  async deicetoken(@Req() req, @Body()dto:devicetokenDto): Promise<StandardResponse<Customer>> {
+    return await this.customerauthService.deviceToken(req.user,dto);
   }
 
   @Post('signup-customer')

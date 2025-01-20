@@ -21,6 +21,8 @@ import { BidStatus } from 'src/Enums/order.enum';
 import { Injectable } from '@nestjs/common';
 import { PaystackCustomer } from 'src/Payment/paystack/paystack-standard-response';
 import { PaystackService } from 'src/Payment/paystack/paystack.service';
+import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
+import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 
 @Injectable()
 export class OrderService {
@@ -36,6 +38,8 @@ export class OrderService {
     private cloudinaryService: CloudinaryService,
     private geolocationService: GeoLocationService,
     private paystackService: PaystackService,
+    private readonly eventsGateway: EventsGateway,
+    private readonly pushnotificationsService:PushNotificationsService
   ) {}
 
   //add items to cart
@@ -179,13 +183,14 @@ export class OrderService {
         Rider: undefined,
         customer: customer,
         createdAT:new Date(),
+        paymentStatus:undefined,
         items: [], //will update after creating the items
       });
       console.log('order', order);
 
       //save order to get its id
       const savedOrder = await this.orderRepository.save(order);
-      console.log('cavedOrder', savedOrder);
+      console.log('savedOrder', savedOrder);
 
       // Create order items
       const orderItems = await Promise.all(
@@ -233,7 +238,27 @@ export class OrderService {
             rider: undefined,
           });
 
-          return await this.bidRepository.save(initialBid);
+          const savedBid = await this.bidRepository.save(initialBid);
+
+           // Emit WebSocket event for new order with initial bid
+           this.eventsGateway.emitToAllRiders('newOrder', {
+            orderId: savedOrder.orderID,
+            pickup: orderItem.pickup_address,
+            dropoff: orderItem.dropoff_address,
+            openning_bid: orderItem.initial_bid_value,
+            itemDetails: {
+              loadType: orderItem.load_type,
+              truckType: orderItem.truck_type,
+              loadValue: orderItem.load_value,
+            }
+          });
+
+
+          //push notifications 
+          this.pushnotificationsService.notifyAllRidersOfNewOrder(savedOrder)
+
+
+          return savedBid
         }),
       );
 
@@ -249,6 +274,8 @@ export class OrderService {
         subject: 'Order Placed',
         account: customer.customerID,
       });
+
+     
 
       //fetch completed order
       const completedOrder = await this.orderRepository.findByID(

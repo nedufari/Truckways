@@ -11,12 +11,15 @@ import { GeoLocationService } from 'src/utils/services/geolocation.service';
 import { PersitenceRelationalOrderModule } from 'src/Order/Infrastructure/Persistence/Relational/persitence.relational.order.module';
 import { RiderService } from './rider.service';
 import { RiderController } from './rider.controller';
+import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
+import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+import { RiderEntity } from './Infrastructure/Persistence/Relational/Entity/rider.entity';
 
 @Module({
   imports: [
     RelationalPersistenceRiderModule,
     PersitenceRelationalOrderModule,
-    TypeOrmModule.forFeature([NotificationsEntity]),
+    TypeOrmModule.forFeature([NotificationsEntity,RiderEntity]),
   ],
   providers: [
     NotificationsService,
@@ -26,6 +29,8 @@ import { RiderController } from './rider.controller';
     JwtService,
     GeoLocationService,
     RiderService,
+    EventsGateway,
+    PushNotificationsService
 
   ],
   controllers: [RiderController],

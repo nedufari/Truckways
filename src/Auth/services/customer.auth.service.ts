@@ -21,6 +21,7 @@ import { Role } from 'src/Enums/users.enum';
 import { VerifficationType } from 'src/Enums/verification.enum';
 import { OrderCartRepository } from 'src/Order/Infrastructure/Persistence/all-order-repositories';
 import { CustomerEntity } from 'src/Customer/Infrastructure/Persistence/Relational/Entity/customer.entity';
+import { devicetokenDto } from '../dto/devicetoken.dto';
 
 @Injectable()
 export class CustomerAuthService {
@@ -47,6 +48,29 @@ export class CustomerAuthService {
     } catch (error) {
       return this.responseService.internalServerError(
         'Error fetching Customer Profile',
+        error.message,
+      );
+    }
+  }
+
+  async deviceToken(
+    customer: Customer,
+    dto: devicetokenDto,
+  ): Promise<StandardResponse<Customer>> {
+    try {
+      const profile = await this.customerRepository.findByID(customer.id);
+      if (!profile) return this.responseService.notFound('user not found');
+      profile.deviceToken = dto.deviceToken;
+
+      const savedProfile = await this.customerRepository.save(profile);
+
+      return this.responseService.success(
+        'Device token Added successfully',
+        savedProfile,
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error adding Device token',
         error.message,
       );
     }
@@ -83,13 +107,13 @@ export class CustomerAuthService {
       await this.mailService.VerifyOtpMail(email, otpCode);
 
       const user = await this.customerRepository.create({
-        email,
-        name,
+        email:email,
+        name:name,
         phoneNumber: undefined,
         password: hashpassword,
         customerID: customerIdcustom,
         id: 0,
-        deviceToken:undefined,
+        deviceToken: undefined,
         profilePicture: '',
         role: Role.CUSTOMER,
         createdAT: new Date(),
@@ -187,7 +211,7 @@ export class CustomerAuthService {
 
       return this.responseService.success(
         'email verified successfully and customer Cart created',
-        { customer: updatedCustomer,cart:cart },
+        { customer: updatedCustomer, cart: cart },
       );
     } catch (error) {
       return this.responseService.internalServerError(

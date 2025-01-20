@@ -12,10 +12,13 @@ import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
 import { PaystackService } from 'src/Payment/paystack/paystack.service';
 import { CustomAxiosService } from 'src/Payment/paystack/custom.axios-service';
+import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
+import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([NotificationsEntity]),
+    TypeOrmModule.forFeature([NotificationsEntity,RiderEntity]),
     PersitenceRelationalOrderModule,
   ],
   providers: [
@@ -28,6 +31,8 @@ import { CustomAxiosService } from 'src/Payment/paystack/custom.axios-service';
     OrderService,
     PaystackService,
     CustomAxiosService,
+    EventsGateway,
+    PushNotificationsService
   ],
   controllers: [OrderController],
 })
