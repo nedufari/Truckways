@@ -1,15 +1,15 @@
-
 import { RiderEntity } from '../Entity/rider.entity';
 import { Rider } from 'src/Rider/Domain/rider';
 import { OrderMapper } from 'src/Order/Infrastructure/Persistence/Relational/Mapper/order.mapper';
 import { BidMapper } from 'src/Order/Infrastructure/Persistence/Relational/Mapper/bids.mapper';
+import { TransactionMapper } from './transaction.mapper';
 
 export class RiderMapper {
   static toDomain(raw: RiderEntity): Rider {
     const domainEntity = new Rider();
     domainEntity.id = raw.id;
     domainEntity.name = raw.name;
-    domainEntity.deviceToken= raw.deviceToken;
+    domainEntity.deviceToken = raw.deviceToken;
     domainEntity.address = raw.address;
     domainEntity.phoneNumber = raw.phoneNumber;
     domainEntity.driversLicenceBack = raw.driversLicenceBack;
@@ -32,9 +32,14 @@ export class RiderMapper {
     domainEntity.accepted_orders = raw.accepted_orders
       ? raw.accepted_orders.map((order) => OrderMapper.toDomain(order))
       : [];
-      domainEntity.accepted_bids = raw.accepted_bids
+    domainEntity.accepted_bids = raw.accepted_bids
       ? raw.accepted_bids.map((bid) => BidMapper.toDomain(bid))
       : [];
+
+    domainEntity.my_transactions = raw.my_transactions
+      ? raw.my_transactions.map((trans) => TransactionMapper.toDomain(trans))
+      : [];
+
     return domainEntity;
   }
 
@@ -62,14 +67,10 @@ export class RiderMapper {
         )
       : [];
 
-      persistenceEntity.accepted_bids = domainEntity.accepted_bids
-      ? domainEntity.accepted_bids.map((bid) =>
-          BidMapper.toPeristence(bid),
-        )
+    persistenceEntity.accepted_bids = domainEntity.accepted_bids
+      ? domainEntity.accepted_bids.map((bid) => BidMapper.toPeristence(bid))
       : [];
 
-
-      
     persistenceEntity.profilePicture = domainEntity.profilePicture;
     persistenceEntity.resetPasswordToken = domainEntity.resetPasswordToken;
     persistenceEntity.resetPasswordTokenExpTime =
@@ -80,6 +81,11 @@ export class RiderMapper {
     persistenceEntity.my_wallet = domainEntity.my_wallet;
     persistenceEntity.vehicle = domainEntity.vehicle;
     persistenceEntity.bank_details = domainEntity.bank_details;
+    persistenceEntity.my_transactions = domainEntity.my_transactions
+      ? domainEntity.my_transactions.map((trans) =>
+          TransactionMapper.toPersistence(trans),
+        )
+      : [];
     return persistenceEntity;
   }
 }

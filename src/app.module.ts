@@ -16,6 +16,9 @@ import { CloudinaryConfig } from './utils/cloudinary/cloudinary.config';
 import { PaystackModule } from './utils/shared-modules/payment.module';
 import { EventsGateway } from './utils/gateway/websocket.gateway';
 
+import { WalletService } from './Rider/wallet/wallet.service';
+import { AdminModule } from './Admin/admin.module';
+
 
 @Module({
   imports: [
@@ -27,7 +30,9 @@ import { EventsGateway } from './utils/gateway/websocket.gateway';
     CustomerModule,
     RiderModule,
     OrderModule,
-    PaystackModule
+    PaystackModule,
+    AdminModule
+   
   ],
   controllers: [AppController],
   providers: [AppService,CloudinaryConfig,EventsGateway],

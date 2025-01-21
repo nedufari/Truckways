@@ -17,6 +17,9 @@ import { RiderAuthService } from './services/rider.auth.service';
 import { RiderAuthController } from './controllers/rider.auth.controller';
 import { PersitenceRelationalOrderModule } from 'src/Order/Infrastructure/Persistence/Relational/persitence.relational.order.module';
 import { RoleGuard } from './Guard/role.guard';
+import { AdminAuthService } from './services/admin.auth.service';
+import { AdminAuthController } from './controllers/admin.auth.controller';
+import { RelationalPersistenceAdminModule } from 'src/Admin/Infrastructure/Persistence/Relational/relational-persistence-admin.module';
 
 @Module({
   imports: [
@@ -24,6 +27,7 @@ import { RoleGuard } from './Guard/role.guard';
     PersitenceRelationalOrderModule,
     RelationalPersistenceCustomerModule,
     RelationalPersistenceRiderModule,
+    RelationalPersistenceAdminModule,
     TypeOrmModule.forFeature([NotificationsEntity, OtpEntity]),
   ],
   providers: [
@@ -35,9 +39,10 @@ import { RoleGuard } from './Guard/role.guard';
     JwtStrategy,
     CustomerAuthService,
     RiderAuthService,
+    AdminAuthService,
     GeneratorService,
     JwtService,
   ],
-  controllers: [CustomerAuthController, RiderAuthController],
+  controllers: [CustomerAuthController, RiderAuthController,AdminAuthController],
 })
 export class AuthModule {}

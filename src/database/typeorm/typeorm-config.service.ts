@@ -12,6 +12,8 @@ import { WalletEntity } from 'src/Rider/Infrastructure/Persistence/Relational/En
 import { BankEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/bank.entity';
 import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
 import { VehicleEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/vehicle.entity';
+import { TransactionEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/transaction.entity';
+import { AdminEntity } from 'src/Admin/Infrastructure/Persistence/Relational/Entity/admin.entity';
 
 @Injectable()
 export class TypeOrmConfigService implements TypeOrmOptionsFactory {
@@ -43,7 +45,9 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
         WalletEntity,
         BankEntity,
         BidEntity,
-        VehicleEntity
+        VehicleEntity,
+        TransactionEntity,
+        AdminEntity
         
       
       ],

@@ -1,9 +1,10 @@
 import { Customer } from "src/Customer/Domain/customer";
 import { Bank } from "src/Rider/Domain/bank";
 import { Rider } from "src/Rider/Domain/rider";
+import { Transactions } from "src/Rider/Domain/transaction";
 import { Vehicle } from "src/Rider/Domain/vehicle";
 import { Wallet } from "src/Rider/Domain/wallet";
-import { PaginationDto } from "src/utils/shared-dto/pagination.dto";
+import { PaginationDto, SearchDto } from "src/utils/shared-dto/pagination.dto";
 
 export abstract class RiderRepository{
     abstract create(rider:Rider):Promise<Rider>
@@ -15,6 +16,7 @@ export abstract class RiderRepository{
     abstract remove (id:string):Promise<void>
     abstract profile (rider:Rider):Promise<Rider>
     abstract save (rider:Rider):Promise<Rider>
+    abstract searchRider (searchdto:SearchDto):Promise<{data:Rider[], total:number}>
 }
 
 export abstract class VehicleRepository{
@@ -24,6 +26,7 @@ export abstract class VehicleRepository{
     abstract update (id:string , vehicle:Partial<Vehicle>):Promise<Vehicle>
     abstract remove (id:string):Promise<void>
     abstract save (vehicle:Vehicle):Promise<Vehicle>
+    abstract searchVehicle (searchdto:SearchDto):Promise<{data:Vehicle[], total:number}>
 }
 
 export abstract class BankRepository{
@@ -38,8 +41,18 @@ export abstract class BankRepository{
 export abstract class WalletRepository{
     abstract create(wallet:Wallet):Promise<Wallet>
     abstract findByID(string:string):Promise<Wallet | null>
+    abstract findByRiderID(string:string):Promise<Wallet | null>
     abstract find(dto:PaginationDto):Promise<{data:Wallet[], total:number}>
     abstract update (id:string , wallet:Partial<Wallet>):Promise<Wallet>
     abstract remove (id:string):Promise<void>
     abstract save (wallet:Wallet):Promise<Wallet>
+}
+
+export abstract class TransactionRepository{
+    abstract create(transaction:Transactions):Promise<Transactions>
+    abstract findByID(string:string):Promise<Transactions | null>
+    abstract findByReference(string:string):Promise<Transactions | null>
+    abstract find(dto:PaginationDto):Promise<{data:Transactions[], total:number}>
+    abstract save (transaction:Transactions):Promise<Transactions>
+    abstract searchTransactions (searchdto:SearchDto):Promise<{data:Transactions[], total:number}>
 }

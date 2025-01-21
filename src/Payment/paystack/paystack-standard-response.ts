@@ -9,9 +9,8 @@ export class PayStaackStandardResponse<T> {
   
     @ApiProperty({ type: Object })
     data: T;
-    plan_code: string;
-    email_token: string;
-    subscription_code: string;
+    reference:string;
+ 
   
     constructor(status: boolean, message: string, data: T) {
       this.status = status;

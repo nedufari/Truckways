@@ -12,6 +12,7 @@ import {
 } from './paystack-standard-response';
 import { v4 as uuidv4 } from 'uuid';
 import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
+import { WalletEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/wallet.entity';
 
 @Injectable()
 export class PaystackService {
@@ -52,6 +53,36 @@ export class PaystackService {
 
     return response;
   };
+
+
+
+  public TransferToWallet = async (
+    amount: number,
+    customer: PaystackCustomer,
+    wallet: WalletEntity,
+  ) => {
+    const reference = wallet.walletAddrress;
+    const response = await this._axiosService.post<
+      PayStaackStandardResponse<InitializeTransactionResponse>
+    >(`${this._config.baseUrl}/transaction/initialize`, {
+      amount: amount * 100, // Convert to kobo (Paystack expects amount in kobo)
+      email: customer.email,
+      reference,
+      //callback_url: process.env.PAYSTACK_CALLBACK_URL,
+      metadata: {
+        customer_fields: {
+          fullname: customer.full_name,
+          phone: customer.phone,
+        },
+        type: 'wallet_transfer',
+      },
+    });
+
+    return response;
+  };
+
+
+
 
   public verifyTransaction = async (reference: string) => {
     const response = await this._axiosService.get<

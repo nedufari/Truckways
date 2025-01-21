@@ -128,6 +128,7 @@ export class CustomerAuthService {
           lon: 0,
         },
         my_cart: undefined,
+        my_orders:[]
       });
 
       //save notification

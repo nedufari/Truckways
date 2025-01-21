@@ -2,6 +2,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import {
   BankRepository,
   RiderRepository,
+  TransactionRepository,
   VehicleRepository,
   WalletRepository,
 } from '../../rider-repository';
@@ -9,7 +10,7 @@ import { Repository } from 'typeorm';
 import { RiderMapper } from '../Mapper/rider.mapper';
 import { RiderEntity } from '../Entity/rider.entity';
 import { Rider } from 'src/Rider/Domain/rider';
-import { PaginationDto } from 'src/utils/shared-dto/pagination.dto';
+import { PaginationDto, SearchDto } from 'src/utils/shared-dto/pagination.dto';
 import { VehicleEntity } from '../Entity/vehicle.entity';
 import { Vehicle } from 'src/Rider/Domain/vehicle';
 import { VehicleMapper } from '../Mapper/vehicle.mapper';
@@ -19,6 +20,9 @@ import { BankMapper } from '../Mapper/bank.mapper';
 import { WalletEntity } from '../Entity/wallet.entity';
 import { Wallet } from 'src/Rider/Domain/wallet';
 import { WalletMapper } from '../Mapper/wallet.mapper';
+import { Transactions } from 'src/Rider/Domain/transaction';
+import { TransactionMapper } from '../Mapper/transaction.mapper';
+import { TransactionEntity } from '../Entity/transaction.entity';
 
 export class RiderRelationalRepository implements RiderRepository {
   constructor(
@@ -96,6 +100,37 @@ export class RiderRelationalRepository implements RiderRepository {
 
     return RiderMapper.toDomain(savedRider);
   }
+
+  async searchRider(
+    searchDto: SearchDto,
+  ): Promise<{ data: Rider[]; total: number }> {
+    const { keyword, page, Perpage, sort, sortOrder } = searchDto;
+
+    const qb = this.riderEntityRepository.createQueryBuilder('rider');
+
+    if (keyword) {
+      qb.where('rider.name ILIKE :keyword', { keyword: `%${keyword}%` });
+      qb.orWhere('rider.riderID ILIKE :keyword', {
+        keyword: `%${keyword}%`,
+      });
+      qb.orWhere('rider.email ILIKE :keyword', {
+        keyword: `%${keyword}%`,
+      });
+    }
+
+    // Sorting
+    qb.orderBy(`rider.${sort}`, sortOrder);
+
+    // Pagination
+    if (page && Perpage) {
+      qb.skip((page - 1) * Perpage).take(Perpage);
+    }
+
+    // Execute the query
+    const [riders, total] = await qb.getManyAndCount();
+
+    return { data: riders, total };
+  }
 }
 
 //vehicle
@@ -155,6 +190,39 @@ export class VehicleRelationalRepository implements VehicleRepository {
     );
 
     return VehicleMapper.toDomain(savedVehicle);
+  }
+
+  async searchVehicle(
+    searchDto: SearchDto,
+  ): Promise<{ data: Vehicle[]; total: number }> {
+    const { keyword, page, Perpage, sort, sortOrder } = searchDto;
+
+    const qb = this.vehicleEntityRepository.createQueryBuilder('vehicle');
+
+    if (keyword) {
+      qb.where('vehicle.vehicleType ILIKE :keyword', {
+        keyword: `%${keyword}%`,
+      });
+      qb.orWhere('vehicle.vehicleID ILIKE :keyword', {
+        keyword: `%${keyword}%`,
+      });
+      qb.orWhere('vehicle.plateNumber ILIKE :keyword', {
+        keyword: `%${keyword}%`,
+      });
+    }
+
+    // Sorting
+    qb.orderBy(`vehicle.${sort}`, sortOrder);
+
+    // Pagination
+    if (page && Perpage) {
+      qb.skip((page - 1) * Perpage).take(Perpage);
+    }
+
+    // Execute the query
+    const [vehicles, total] = await qb.getManyAndCount();
+
+    return { data: vehicles, total };
   }
 }
 
@@ -236,6 +304,14 @@ export class WalletRelationalRepository implements WalletRepository {
     return wallet ? WalletMapper.toDomain(wallet) : null;
   }
 
+  async findByRiderID(id: string): Promise<Wallet> {
+    const wallet = await this.walletEntityRepository.findOne({
+      where: { rider: { riderID: id } },
+      relations: ['rider'],
+    });
+    return wallet ? WalletMapper.toDomain(wallet) : null;
+  }
+
   async find(dto: PaginationDto): Promise<{ data: Wallet[]; total: number }> {
     const { page, limit, sortBy, sortOrder } = dto;
     const [result, total] = await this.walletEntityRepository.findAndCount({
@@ -271,5 +347,97 @@ export class WalletRelationalRepository implements WalletRepository {
     );
 
     return WalletMapper.toDomain(savedWallet);
+  }
+}
+
+export class TransactionRelationalRepository implements TransactionRepository {
+  constructor(
+    @InjectRepository(TransactionEntity)
+    private transactionEntityRepository: Repository<TransactionEntity>,
+  ) {}
+
+  async create(transaction: Transactions): Promise<Transactions> {
+    const persistencetransaction = TransactionMapper.toPersistence(transaction);
+    const savedTransaction = await this.transactionEntityRepository.save(
+      persistencetransaction,
+    );
+    return TransactionMapper.toDomain(savedTransaction);
+  }
+
+  async findByID(id: string): Promise<Transactions> {
+    const wallet = await this.transactionEntityRepository.findOne({
+      where: { transactionID: id },
+    });
+    return wallet ? TransactionMapper.toDomain(wallet) : null;
+  }
+
+  async findByReference(reference: string): Promise<Transactions> {
+    const wallet = await this.transactionEntityRepository.findOne({
+      where: { reference: reference },
+    });
+    return wallet ? TransactionMapper.toDomain(wallet) : null;
+  }
+
+  async find(
+    dto: PaginationDto,
+  ): Promise<{ data: Transactions[]; total: number }> {
+    const { page, limit, sortBy, sortOrder } = dto;
+    const [result, total] = await this.transactionEntityRepository.findAndCount(
+      {
+        skip: (page - 1) * limit,
+        take: limit,
+        order: { [sortBy]: sortOrder },
+        relations: ['rider'],
+      },
+    );
+    const wallets = result.map(TransactionMapper.toDomain);
+    return { data: wallets, total };
+  }
+
+  async save(transaction: Transactions): Promise<Transactions> {
+    const persistenceWallet = TransactionMapper.toPersistence(transaction);
+    const savedWallet = await this.transactionEntityRepository.save(
+      persistenceWallet,
+      { reload: true },
+    );
+
+    return TransactionMapper.toDomain(savedWallet);
+  }
+
+
+  async searchTransactions(
+    searchDto: SearchDto,
+  ): Promise<{ data: Transactions[]; total: number }> {
+    const { keyword, page, Perpage, sort, sortOrder } = searchDto;
+
+    const qb = this.transactionEntityRepository.createQueryBuilder('tran');
+
+    if (keyword) {
+      qb.where('tran.transactionID ILIKE :keyword', {
+        keyword: `%${keyword}%`,
+      });
+      qb.orWhere('tran.walletAddrress ILIKE :keyword', {
+        keyword: `%${keyword}%`,
+      });
+      qb.orWhere('tran.description ILIKE :keyword', {
+        keyword: `%${keyword}%`,
+      });
+      qb.orWhere('tran.reference ILIKE :keyword', {
+        keyword: `%${keyword}%`,
+      });
+    }
+
+    // Sorting
+    qb.orderBy(`tran.${sort}`, sortOrder);
+
+    // Pagination
+    if (page && Perpage) {
+      qb.skip((page - 1) * Perpage).take(Perpage);
+    }
+
+    // Execute the query
+    const [transactions, total] = await qb.getManyAndCount();
+
+    return { data: transactions, total };
   }
 }

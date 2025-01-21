@@ -16,8 +16,9 @@ import { BankEntity } from '../Infrastructure/Persistence/Relational/Entity/bank
 import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
 import { WalletEntity } from '../Infrastructure/Persistence/Relational/Entity/wallet.entity';
 import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
+import { TransactionEntity } from '../Infrastructure/Persistence/Relational/Entity/transaction.entity';
 
-export class Rider{
+export class Rider {
   @ApiProperty({ type: Number })
   @IsNumber()
   id: number;
@@ -54,7 +55,6 @@ export class Rider{
   @IsString()
   state: string;
 
-
   @ApiProperty({ type: String })
   @IsString()
   companyRegNum: string;
@@ -90,15 +90,13 @@ export class Rider{
   @IsBoolean()
   emailConfirmed: boolean;
 
+  @ApiProperty({ type: Boolean })
+  @IsBoolean()
+  isAprroved: boolean;
 
   @ApiProperty({ type: Boolean })
   @IsBoolean()
-  isAprroved:boolean
-
-
-  @ApiProperty({ type: Boolean })
-  @IsBoolean()
-  isBlocked:boolean
+  isBlocked: boolean;
 
   @ApiProperty({ enum: Role })
   @IsEnum(Role)
@@ -106,7 +104,7 @@ export class Rider{
 
   @ApiProperty({ enum: RiderStatus })
   @IsEnum(RiderStatus)
-  RiderStatus:RiderStatus
+  RiderStatus: RiderStatus;
 
   @ApiProperty({ type: String })
   @IsString()
@@ -126,15 +124,15 @@ export class Rider{
 
   //relationships
 
-  //rides 
+  //rides
 
-  //vehicle 
-  @ApiProperty({type:()=>VehicleEntity})
-  vehicle: VehicleEntity
+  //vehicle
+  @ApiProperty({ type: () => VehicleEntity })
+  vehicle: VehicleEntity;
 
-  //bank  info 
-  @ApiProperty({type:()=>BankEntity})
-  bank_details: BankEntity
+  //bank  info
+  @ApiProperty({ type: () => BankEntity })
+  bank_details: BankEntity;
 
   //accepted orders
   @ApiProperty({ type: () => [OrderEntity] })
@@ -143,7 +141,10 @@ export class Rider{
   @ApiProperty({ type: () => [BidEntity] })
   accepted_bids: BidEntity[];
 
-    //wallet
-    @ApiProperty({ type: () => WalletEntity })
-    my_wallet: BankEntity;
+  //wallet
+  @ApiProperty({ type: () => WalletEntity })
+  my_wallet: BankEntity;
+
+  @ApiProperty({ type: () => [TransactionEntity] })
+  my_transactions: TransactionEntity[];
 }

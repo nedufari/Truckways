@@ -5,20 +5,18 @@ import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Ent
 import {
   Column,
   Entity,
-  OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-@Entity({ name: 'customers' })
-export class CustomerEntity {
+@Entity({ name: 'admins' })
+export class AdminEntity {
   @ApiProperty({ type: Number })
   @PrimaryGeneratedColumn()
   id: number;
 
   @ApiProperty({ type: String })
   @Column({ nullable: true })
-  customerID: string;
+  adminID: string;
 
   @ApiProperty({ type: String })
   @Column({ nullable: true })
@@ -36,9 +34,7 @@ export class CustomerEntity {
   @Column({ nullable: true })
   phoneNumber: string;
 
-  @ApiProperty({ type: String })
-  @Column({ nullable: true })
-  altrnatePhoneNumber: string;
+
 
   @ApiProperty({
     type: 'object',
@@ -87,17 +83,7 @@ export class CustomerEntity {
   @Column({ type: 'timestamp', nullable: true })
   updatedAT: Date;
 
-  //relationships
 
-  //orders
-  @ApiProperty({ type: () => [OrderEntity] })
-  @OneToMany(() => OrderEntity, (cart) => cart.customer)
-  my_orders: OrderEntity[];
-
-  //cart
-  @ApiProperty({ type: () => OrderCartEntity })
-  @OneToOne(() => OrderCartEntity, (cart) => cart.customer)
-  my_cart: OrderCartEntity;
 
   
 }

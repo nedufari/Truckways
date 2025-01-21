@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { AdminRepository } from 'src/Admin/Infrastructure/Persistence/admin-repository';
 import { CustomerRepository } from 'src/Customer/Infrastructure/Persistence/customer-repository';
 import { RiderRepository } from 'src/Rider/Infrastructure/Persistence/rider-repository';
 
@@ -16,6 +17,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     configservice: ConfigService,
     private readonly customerRepo: CustomerRepository,
     private readonly riderRepo: RiderRepository,
+    private readonly adminRepo:AdminRepository
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -29,8 +31,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
             return await this.riderRepo.findByID(id)
         case "Customer":
             return await this.customerRepo.findByID(id)
-        // case "admin":
-        //     return await this.adminRepo.findByID(id)
+        case "Admin":
+           return await this.adminRepo.findByID(id)
        
 
         default:

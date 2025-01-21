@@ -115,6 +115,39 @@ export class NotificationsService {
   }
 
 
+
+  async fetchAllAdmin(
+    params?: PaginationParams,
+  ): Promise<NotificationResponse> {
+    try {
+      const page = params?.page || 1;
+      const limit = params?.limit || 15;
+      const skip = (page - 1) * limit;
+
+      const [notifications, totalCount] = await this.notificationsRepository.findAndCount({
+        order: { date: 'DESC' },
+        skip,
+        take: limit,
+      });
+
+      // Get unread count
+      const unreadCount = await this.notificationsRepository.count({
+        where: { 
+          isRead: false,
+        },
+      });
+
+      return {
+        notifications,
+        count: totalCount,
+        unreadCount,
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch notifications: ${error.message}`);
+    }
+  }
+
+
   async markAsRead(notificationId: string, accountId: string): Promise<NotificationsEntity> {
     try {
       const notification = await this.notificationsRepository.findOne({
@@ -149,6 +182,39 @@ export class NotificationsService {
   }
 
 
+  async markAsReadAdmin(notificationId: string): Promise<NotificationsEntity> {
+    try {
+      const notification = await this.notificationsRepository.findOne({
+        where: { 
+          notificationID: notificationId,
+         
+        }
+      });
+
+      if (!notification) {
+        throw new NotFoundException('Notification not found');
+      }
+
+      // Already read - no need to update
+      if (notification.isRead) {
+        return notification;
+      }
+
+      notification.isRead = true;
+      notification.readAt = new Date();
+
+      return await this.notificationsRepository.save(notification);
+    } catch (error) {
+      console.error('Error marking notification as read:', {
+        notificationId,
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
+  }
+
+
   async markMultipleAsRead(notificationIds: string[], accountId: string): Promise<void> {
     try {
       await this.notificationsRepository
@@ -174,6 +240,28 @@ export class NotificationsService {
 
 
 
+  async markMultipleAsReadAdmin(notificationIds: string[]): Promise<void> {
+    try {
+      await this.notificationsRepository
+        .createQueryBuilder()
+        .update(NotificationsEntity)
+        .set({ 
+          isRead: true,
+          readAt: new Date()
+        })
+        .where('id IN (:...ids)', { ids: notificationIds })
+        .execute();
+    } catch (error) {
+      console.error('Error marking multiple notifications as read:', {
+        notificationIds,
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
+  }
+
+
   async markAllAsRead(accountId: string): Promise<void> {
     try {
       await this.notificationsRepository
@@ -189,6 +277,27 @@ export class NotificationsService {
     } catch (error) {
       console.error('Error marking all notifications as read:', {
         accountId,
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
+  }
+
+
+  async markAllAsReadAdmin(): Promise<void> {
+    try {
+      await this.notificationsRepository
+        .createQueryBuilder()
+        .update(NotificationsEntity)
+        .set({ 
+          isRead: true,
+          readAt: new Date()
+        })
+        .andWhere('isRead = :isRead', { isRead: false })
+        .execute();
+    } catch (error) {
+      console.error('Error marking all notifications as read:', {
         error: error.message,
         stack: error.stack,
       });

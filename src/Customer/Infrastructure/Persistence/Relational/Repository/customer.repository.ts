@@ -4,6 +4,7 @@ import { CustomerEntity } from '../Entity/customer.entity';
 import { Repository } from 'typeorm';
 import { Customer } from 'src/Customer/Domain/customer';
 import { CustomerMapper } from '../Mapper/customer.mapper';
+import { PaginationDto, SearchDto } from 'src/utils/shared-dto/pagination.dto';
 
 export class CustomerRelationalRepository implements CustomerRepository {
   constructor(
@@ -47,10 +48,16 @@ export class CustomerRelationalRepository implements CustomerRepository {
     return customer ? CustomerMapper.toDomain(customer) : null;
   }
 
-  async find(): Promise<Customer[]> {
-    const customers = await this.customerEntityRepository.find();
-    const result = customers.map(CustomerMapper.toDomain);
-    return result;
+  async find(dto: PaginationDto): Promise<{ data: Customer[]; total: number }> {
+    const { page, limit, sortBy, sortOrder } = dto;
+    const [result, total] = await this.customerEntityRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sortBy]: sortOrder },
+      relations: ['owner'],
+    });
+    const wallets = result.map(CustomerMapper.toDomain);
+    return { data: wallets, total };
   }
 
   async update(id: number, customer: Partial<Customer>): Promise<Customer> {
@@ -76,5 +83,36 @@ export class CustomerRelationalRepository implements CustomerRepository {
     );
 
     return CustomerMapper.toDomain(savedCustomer);
+  }
+
+  async searchCustomer(
+    searchDto: SearchDto,
+  ): Promise<{ data: Customer[]; total: number }> {
+    const { keyword, page, Perpage, sort, sortOrder } = searchDto;
+
+    const qb = this.customerEntityRepository.createQueryBuilder('customer');
+
+    if (keyword) {
+      qb.where('customer.name ILIKE :keyword', { keyword: `%${keyword}%` });
+      qb.orWhere('customer.customerID ILIKE :keyword', {
+        keyword: `%${keyword}%`,
+      });
+      qb.orWhere('customer.email ILIKE :keyword', {
+        keyword: `%${keyword}%`,
+      });
+    }
+
+    // Sorting
+    qb.orderBy(`customer.${sort}`, sortOrder);
+
+    // Pagination
+    if (page && Perpage) {
+      qb.skip((page - 1) * Perpage).take(Perpage);
+    }
+
+    // Execute the query
+    const [customers, total] = await qb.getManyAndCount();
+
+    return { data: customers, total };
   }
 }

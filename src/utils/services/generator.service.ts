@@ -73,6 +73,15 @@ export class GeneratorService {
     return gen();
   }
 
+
+  public generateWalletAddress(): string {
+    const gen = nanoid.customAlphabet(
+      '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+      18,
+    );
+    return gen();
+  }
+
   public generatePassword(): string {
     const nanoid = customAlphabet(
       '1234567890abcdefghijklmopqrstuvwxyzABCDEFGHIJKLMOPQRSTUVWXYZ@#*!(){}[]/|``^&$',

@@ -7,12 +7,14 @@ import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { PaymentStatus } from 'src/Enums/order.enum';
+import { WalletService } from 'src/Rider/wallet/wallet.service';
 
 interface PaystackEventData {
   event: string;
   data: {
     reference: string;
     status: string;
+    amount:number;
     metadata: {
       type: string;
       customer_fields: {
@@ -37,6 +39,7 @@ export class PaystackWebhookService {
     private readonly paystackService: PaystackService,
     private readonly notificationsService: NotificationsService,
     private readonly configService: ConfigService,
+    private readonly walletService: WalletService,
   ) {}
 
   async handleWebhook(req: Request, res: Response): Promise<void> {
@@ -68,11 +71,13 @@ export class PaystackWebhookService {
 
       switch (event.event) {
         case 'charge.success':
-          await this.handleSuccessfulCharge(event.data, event.data.reference);
+          await this.handleOrderPayment(event.data, event.data.reference);
           break;
         case 'transfer.success':
-          await this.handleSuccessfulTransfer(event.data);
+          await this.handleWalletFunding(event.data);
           break;
+        case 'withdrawal.success':
+          await this.handleWithdrawalSuccess(event.data)
         default:
           console.log('Unsupported Paystack webhook event:', event.event);
       }
@@ -84,7 +89,7 @@ export class PaystackWebhookService {
       res.sendStatus(500);
     }
   }
-  private async handleSuccessfulCharge(
+  private async handleOrderPayment(
     data: PaystackEventData['data'],
     paymentReference: string,
   ): Promise<void> {
@@ -131,7 +136,7 @@ export class PaystackWebhookService {
         // Find the order again to get customer ID
         const order = await this.orderRepository.findByID(paymentReference);
 
-        if (order) {
+        if (!order) {
           // Send error notification to customer
           await this.notificationsService.create({
             subject: 'Payment Processing Failed',
@@ -162,10 +167,63 @@ export class PaystackWebhookService {
       throw error;
     }
   }
-  private async handleSuccessfulTransfer(
+
+  private async handleWalletFunding(
     data: PaystackEventData['data'],
   ): Promise<void> {
-    // Implement transfer success handling logic here
-    console.log('Transfer success event received:', data.reference);
+    try {
+      // Verify the transaction
+      const verificationResponse = await this.paystackService.verifyTransaction(
+        data.reference,
+      );
+
+      if (
+        !verificationResponse?.data?.status
+      ) {
+        throw new Error(
+          `Transaction verification failed for reference: ${data.reference}`,
+        );
+      }
+
+      // Process the wallet funding
+      const amountInNaira = data.amount / 100; // Convert from kobo to naira
+      await this.walletService.processFundingSuccess(
+        data.reference,
+        amountInNaira,
+      );
+    } catch (error) {
+      console.error('Error processing wallet funding:', error);
+      // Send error notification to admin
+      await this.notificationsService.create({
+        subject: 'Wallet Funding Error',
+        message: `Error processing wallet funding for reference: ${data.reference}. Error: ${error.message}`,
+        account: 'admin',
+      });
+      throw error;
+    }
+  }
+
+  private async handleWithdrawalSuccess(
+    data: PaystackEventData['data'],
+  ): Promise<void> {
+    try {
+      // Process the successful withdrawal
+      await this.walletService.processWithdrawalSuccess(data.reference);
+      await this.notificationsService.create({
+        subject: 'Withdrawal Successful',
+        message: ` withdrawal for reference: ${data.reference} was successful`,
+        account: 'admin',
+      });
+      
+    } catch (error) {
+      console.error('Error processing withdrawal success:', error);
+      // Send error notification to admin
+      await this.notificationsService.create({
+        subject: 'Withdrawal Processing Error',
+        message: `Error processing withdrawal for reference: ${data.reference}. Error: ${error.message}`,
+        account: 'admin',
+      });
+      throw error;
+    }
   }
 }

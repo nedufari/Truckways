@@ -2,7 +2,7 @@ import { Bid } from 'src/Order/Domain/bids';
 import { Order } from 'src/Order/Domain/order';
 import { OrderCart } from 'src/Order/Domain/order-cart';
 import { CartItem, Ordertem } from 'src/Order/Domain/order-cart-items';
-import { PaginationDto } from 'src/utils/shared-dto/pagination.dto';
+import { PaginationDto, SearchDto } from 'src/utils/shared-dto/pagination.dto';
 
 export abstract class OrderRepository {
   abstract create(order: Order): Promise<Order>;
@@ -12,6 +12,7 @@ export abstract class OrderRepository {
   abstract findAllRelatedToRider(riderID:string, dto:PaginationDto):Promise<{data:Order[],total:number}>
   abstract remove(id: string): Promise<void>;
   abstract save(order: Order): Promise<Order>;
+  abstract searchOrder (searchdto:SearchDto):Promise<{data:Order[], total:number}>
 }
 
 export abstract class OrderCartRepository {
@@ -48,4 +49,5 @@ export abstract class BidRepository {
   abstract remove(id: string): Promise<void>;
   abstract update(id: number, item: Partial<Bid>): Promise<Bid>;
   abstract save(bid: Bid): Promise<Bid>;
+  abstract searchBid(searchdto:SearchDto):Promise<{data:Bid[], total:number}>
 }

@@ -4,18 +4,21 @@ import { RiderEntity } from './Entity/rider.entity';
 import {
   BankRepository,
   RiderRepository,
+  TransactionRepository,
   VehicleRepository,
   WalletRepository,
 } from '../rider-repository';
 import {
   BankRelationalRepository,
   RiderRelationalRepository,
+  TransactionRelationalRepository,
   VehicleRelationalRepository,
   WalletRelationalRepository,
 } from './Repository/rider.repository';
 import { VehicleEntity } from './Entity/vehicle.entity';
 import { BankEntity } from './Entity/bank.entity';
 import { WalletEntity } from './Entity/wallet.entity';
+import { TransactionEntity } from './Entity/transaction.entity';
 
 @Module({
   imports: [
@@ -24,6 +27,7 @@ import { WalletEntity } from './Entity/wallet.entity';
       VehicleEntity,
       BankEntity,
       WalletEntity,
+      TransactionEntity
     ]),
   ],
   providers: [
@@ -43,7 +47,17 @@ import { WalletEntity } from './Entity/wallet.entity';
       provide: WalletRepository,
       useClass: WalletRelationalRepository,
     },
+    {
+      provide: TransactionRepository,
+      useClass: TransactionRelationalRepository,
+    },
   ],
-  exports:[RiderRepository,BankRepository,VehicleRepository,WalletRepository]
+  exports: [
+    RiderRepository,
+    BankRepository,
+    VehicleRepository,
+    WalletRepository,
+    TransactionRepository,
+  ],
 })
 export class RelationalPersistenceRiderModule {}

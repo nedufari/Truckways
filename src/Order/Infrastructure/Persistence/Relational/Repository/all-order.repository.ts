@@ -10,7 +10,7 @@ import { OrderEntity, OrderItemsEntity } from '../Entity/order.entity';
 import { Repository } from 'typeorm';
 import { Order } from 'src/Order/Domain/order';
 import { OrderMapper } from '../Mapper/order.mapper';
-import { PaginationDto } from 'src/utils/shared-dto/pagination.dto';
+import { PaginationDto, SearchDto } from 'src/utils/shared-dto/pagination.dto';
 import { OrderCart } from 'src/Order/Domain/order-cart';
 import { OrderCartEntity } from '../Entity/order-cart.entity';
 import { OrderCartMapper } from '../Mapper/order-cart.mapper';
@@ -96,6 +96,34 @@ export class OrderRelationalRepository implements OrderRepository {
 
   async remove(id: string): Promise<void> {
     await this.orderEntityRepository.delete(id);
+  }
+
+
+
+  async searchOrder(
+    searchDto: SearchDto,
+  ): Promise<{ data: Order[]; total: number }> {
+    const { keyword, page, Perpage, sort, sortOrder } = searchDto;
+
+    const qb = this.orderEntityRepository.createQueryBuilder('order');
+
+    if (keyword) {
+      qb.where('order.orderID ILIKE :keyword', { keyword: `%${keyword}%` });
+     
+    }
+
+    // Sorting
+    qb.orderBy(`order.${sort}`, sortOrder);
+
+    // Pagination
+    if (page && Perpage) {
+      qb.skip((page - 1) * Perpage).take(Perpage);
+    }
+
+    // Execute the query
+    const [orders, total] = await qb.getManyAndCount();
+
+    return { data: orders, total };
   }
 }
 
@@ -348,4 +376,31 @@ export class BidsRelationalRepository implements BidRepository {
     });
     return BidMapper.toDomain(updatedBid);
   }
+
+  async searchBid(
+    searchDto: SearchDto,
+  ): Promise<{ data: Bid[]; total: number }> {
+    const { keyword, page, Perpage, sort, sortOrder } = searchDto;
+
+    const qb = this.bidEntityRepository.createQueryBuilder('bid');
+
+    if (keyword) {
+      qb.where('bid.orderID ILIKE :keyword', { keyword: `%${keyword}%` });
+     
+    }
+
+    // Sorting
+    qb.orderBy(`bid.${sort}`, sortOrder);
+
+    // Pagination
+    if (page && Perpage) {
+      qb.skip((page - 1) * Perpage).take(Perpage);
+    }
+
+    // Execute the query
+    const [orders, total] = await qb.getManyAndCount();
+
+    return { data: orders, total };
+  }
+
 }

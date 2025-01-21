@@ -11,16 +11,15 @@ import {
 } from 'class-validator';
 import { Role } from 'src/Enums/users.enum';
 import { OrderCartEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order-cart.entity';
-import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
 
-export class Customer {
+export class Admin {
   @ApiProperty({ type: Number })
   @IsNumber()
   id: number;
 
   @ApiProperty({ type: String })
   @IsString()
-  customerID: string;
+  adminID: string;
 
   @ApiProperty({ type: String })
   @IsString()
@@ -42,9 +41,7 @@ export class Customer {
   @ApiProperty({ type: String })
   deviceToken: string;
 
-  @ApiProperty({ type: String })
-  @IsString()
-  altrnatePhoneNumber: string;
+ 
 
   @ApiProperty({
     type: 'object',
@@ -89,12 +86,5 @@ export class Customer {
   @IsDate()
   updatedAT: Date;
 
-  //relationships
 
-  @ApiProperty({ type: () => OrderCartEntity })
-  my_cart: OrderCartEntity;
-
-  //orders
-  @ApiProperty({ type: () => [OrderEntity] })
-  my_orders: OrderEntity[];
 }

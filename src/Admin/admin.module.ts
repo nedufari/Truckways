@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RelationalPersistenceRiderModule } from './Infrastructure/Persistence/Relational/relational-persistence-rider.module';
+import { RelationalPersistenceAdminModule } from './Infrastructure/Persistence/Relational/relational-persistence-admin.module';
 import { NotificationsService } from 'src/utils/services/notifications.service';
 import { NotificationsEntity } from 'src/utils/shared-entities/notification.entity';
 import { ResponseService } from 'src/utils/services/response.service';
@@ -7,24 +7,23 @@ import { CloudinaryService } from 'src/utils/services/cloudinary.service';
 import { GeneratorService } from 'src/utils/services/generator.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
+import { AdminService} from './admin.service';
+import { AdminController} from './admin.controller';
 import { GeoLocationService } from 'src/utils/services/geolocation.service';
 import { PersitenceRelationalOrderModule } from 'src/Order/Infrastructure/Persistence/Relational/persitence.relational.order.module';
-import { RiderService } from './rider.service';
-import { RiderController } from './rider.controller';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
 //import { PushNotificationsService } from 'src/utils/services/push-notification.service';
-import { RiderEntity } from './Infrastructure/Persistence/Relational/Entity/rider.entity';
-import { WalletService } from './wallet/wallet.service';
-import { WalletRepository } from './Infrastructure/Persistence/rider-repository';
-import { WalletController } from './wallet/wallet.controller';
-import { PaystackService } from 'src/Payment/paystack/paystack.service';
-import { CustomAxiosService } from 'src/Payment/paystack/custom.axios-service';
+import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity';
+import { RelationalPersistenceCustomerModule } from 'src/Customer/Infrastructure/Persistence/Relational/relational-persistence-customer.module';
+import { RelationalPersistenceRiderModule } from 'src/Rider/Infrastructure/Persistence/Relational/relational-persistence-rider.module';
 
 @Module({
   imports: [
+    RelationalPersistenceAdminModule,
+    RelationalPersistenceCustomerModule,
     RelationalPersistenceRiderModule,
     PersitenceRelationalOrderModule,
-    TypeOrmModule.forFeature([NotificationsEntity,RiderEntity]),
+    TypeOrmModule.forFeature([NotificationsEntity, RiderEntity]),
   ],
   providers: [
     NotificationsService,
@@ -32,15 +31,11 @@ import { CustomAxiosService } from 'src/Payment/paystack/custom.axios-service';
     CloudinaryService,
     GeneratorService,
     JwtService,
+    AdminService,
     GeoLocationService,
-    RiderService,
     EventsGateway,
-    WalletService,
-    PaystackService,
-    CustomAxiosService
-   // PushNotificationsService
-
+    //PushNotificationsService
   ],
-  controllers: [RiderController,WalletController],
+  controllers: [AdminController],
 })
-export class RiderModule {}
+export class AdminModule {}
