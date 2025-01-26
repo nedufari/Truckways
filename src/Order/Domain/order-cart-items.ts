@@ -100,4 +100,10 @@ export class Ordertem {
 
   @ApiProperty({ type: () => OrderEntity })
   order: OrderEntity;
+
+  @ApiProperty()
+  droppedOffAT : Date
+
+  @ApiProperty({type:Boolean})
+  isDroppedOff : boolean
 }

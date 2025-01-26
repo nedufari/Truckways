@@ -2,6 +2,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import {
   BankRepository,
   RiderRepository,
+  RidesRepository,
   TransactionRepository,
   VehicleRepository,
   WalletRepository,
@@ -23,6 +24,9 @@ import { WalletMapper } from '../Mapper/wallet.mapper';
 import { Transactions } from 'src/Rider/Domain/transaction';
 import { TransactionMapper } from '../Mapper/transaction.mapper';
 import { TransactionEntity } from '../Entity/transaction.entity';
+import { Rides } from 'src/Rider/Domain/rides';
+import { RidesMapper } from '../Mapper/rides.mapper';
+import { RidesEntity } from '../Entity/rides.entity';
 
 export class RiderRelationalRepository implements RiderRepository {
   constructor(
@@ -440,4 +444,96 @@ export class TransactionRelationalRepository implements TransactionRepository {
 
     return { data: transactions, total };
   }
+
+}
+
+  export class RidesRelationalRepository implements RidesRepository {
+    constructor(
+      @InjectRepository(RidesEntity)
+      private ridesEntityRepository: Repository<RidesEntity>,
+    ) {}
+  
+    async create(transaction: Rides): Promise<Rides> {
+      const persistencetransaction = RidesMapper.toPerisitence(transaction);
+      const savedTransaction = await this.ridesEntityRepository.save(
+        persistencetransaction,
+      );
+      return RidesMapper.toDomain(savedTransaction);
+    }
+  
+    async findByID(id: string): Promise<Rides> {
+      const wallet = await this.ridesEntityRepository.findOne({
+        where: { ridesID: id },
+      });
+      return wallet ? RidesMapper.toDomain(wallet) : null;
+    }
+  
+  
+  
+    async find(
+      dto: PaginationDto,
+    ): Promise<{ data: Rides[]; total: number }> {
+      const { page, limit, sortBy, sortOrder } = dto;
+      const [result, total] = await this.ridesEntityRepository.findAndCount(
+        {
+          skip: (page - 1) * limit,
+          take: limit,
+          order: { [sortBy]: sortOrder },
+          relations: ['rider','order'],
+        },
+      );
+      const wallets = result.map(RidesMapper.toDomain);
+      return { data: wallets, total };
+    }
+  
+    async save(transaction: Rides): Promise<Rides> {
+      const persistenceWallet = RidesMapper.toPerisitence(transaction);
+      const savedWallet = await this.ridesEntityRepository.save(
+        persistenceWallet,
+        { reload: true },
+      );
+  
+      return RidesMapper.toDomain(savedWallet);
+    }
+  
+  
+    async searchRides(
+      searchDto: SearchDto,
+    ): Promise<{ data: Rides[]; total: number }> {
+      const { keyword, page, Perpage, sort, sortOrder } = searchDto;
+  
+      const qb = this.ridesEntityRepository.createQueryBuilder('ride');
+  
+      if (keyword) {
+        qb.where('ride.ridesID ILIKE :keyword', {
+          keyword: `%${keyword}%`,
+        });
+   
+      }
+  
+      // Sorting
+      qb.orderBy(`ride.${sort}`, sortOrder);
+  
+      // Pagination
+      if (page && Perpage) {
+        qb.skip((page - 1) * Perpage).take(Perpage);
+      }
+  
+      // Execute the query
+      const [rides, total] = await qb.getManyAndCount();
+  
+      return { data: rides, total };
+    }
+
+
+    async update(id: number, wallet: Partial<Rides>): Promise<Rides> {
+      await this.ridesEntityRepository.update(
+        id,
+        WalletMapper.toPersistence(wallet as Wallet),
+      );
+      const updatedWallet = await this.ridesEntityRepository.findOne({
+        where: { id: id },
+      });
+      return RidesMapper.toDomain(updatedWallet);
+    }
 }

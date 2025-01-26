@@ -14,9 +14,15 @@ import { PersitenceRelationalOrderModule } from 'src/Order/Infrastructure/Persis
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
 //import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity';
+import { RelationalPersistenceRiderModule } from 'src/Rider/Infrastructure/Persistence/Relational/relational-persistence-rider.module';
 
 @Module({
-  imports: [RelationalPersistenceCustomerModule, PersitenceRelationalOrderModule,TypeOrmModule.forFeature([NotificationsEntity,RiderEntity])],
+  imports: [
+    RelationalPersistenceCustomerModule,
+    RelationalPersistenceRiderModule,
+    PersitenceRelationalOrderModule,
+    TypeOrmModule.forFeature([NotificationsEntity, RiderEntity]),
+  ],
   providers: [
     NotificationsService,
     ResponseService,
@@ -26,6 +32,7 @@ import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Ent
     CustomerService,
     GeoLocationService,
     EventsGateway,
+
     //PushNotificationsService
   ],
   controllers: [CustomerController],

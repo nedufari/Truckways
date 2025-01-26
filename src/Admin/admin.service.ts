@@ -2,7 +2,10 @@ import {
   ResponseService,
   StandardResponse,
 } from 'src/utils/services/response.service';
-import { AdminRepository } from './Infrastructure/Persistence/admin-repository';
+import {
+  AdminRepository,
+  PercentageConfigRepository,
+} from './Infrastructure/Persistence/admin-repository';
 import { CloudinaryService } from 'src/utils/services/cloudinary.service';
 import { NotificationsService } from 'src/utils/services/notifications.service';
 import { AdminEntity } from './Infrastructure/Persistence/Relational/Entity/admin.entity';
@@ -33,9 +36,21 @@ import { Order } from 'src/Order/Domain/order';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
 import { Customer } from 'src/Customer/Domain/customer';
 import { CustomerRepository } from 'src/Customer/Infrastructure/Persistence/customer-repository';
-import { RiderRepository, TransactionRepository, VehicleRepository } from 'src/Rider/Infrastructure/Persistence/rider-repository';
+import {
+  RiderRepository,
+  TransactionRepository,
+  VehicleRepository,
+  WalletRepository,
+} from 'src/Rider/Infrastructure/Persistence/rider-repository';
 import { Rider } from 'src/Rider/Domain/rider';
 import { Transactions } from 'src/Rider/Domain/transaction';
+import { AppproveRiderDto, BlockRiderDto } from './Dto/approve-rider.dto';
+import { GeneratorService } from 'src/utils/services/generator.service';
+import {
+  CreatePercentageDto,
+  UpdatePercentageDto,
+} from './Dto/percentage-config.dto';
+import { PercentageConfig } from './Domain/percentage';
 
 //import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
@@ -48,12 +63,16 @@ export class AdminService {
     private notificationsService: NotificationsService,
     private geolocationService: GeoLocationService,
     private customerRepo: CustomerRepository,
-    private riderRepo:RiderRepository,
-    private vehicleRepo:VehicleRepository,
-    private transactionRepo:TransactionRepository,
+    private riderRepo: RiderRepository,
+    private vehicleRepo: VehicleRepository,
+    private transactionRepo: TransactionRepository,
     private orderRepository: OrderRepository,
-    private bidRepository:BidRepository,
+    private bidRepository: BidRepository,
+    private walletRipo: WalletRepository,
+    private percentageRepo: PercentageConfigRepository,
+    private genefratorService: GeneratorService,
     private readonly eventsGateway: EventsGateway,
+
     //private readonly pushNotificationService:PushNotificationsService,
   ) {}
 
@@ -116,9 +135,8 @@ export class AdminService {
         return this.responseService.badRequest('Invalid admin ID provided');
       }
 
-      const updatedNotification = await this.notificationsService.markAsReadAdmin(
-        notificationId,
-      );
+      const updatedNotification =
+        await this.notificationsService.markAsReadAdmin(notificationId);
 
       return this.responseService.success(
         'Notification marked as read successfully',
@@ -144,7 +162,7 @@ export class AdminService {
   }
 
   async markMultipleNotificationsAsRead(
-   admin: AdminEntity,
+    admin: AdminEntity,
     dto: markMultipleNotificationsAsReadDto,
   ): Promise<StandardResponse<void>> {
     try {
@@ -163,7 +181,6 @@ export class AdminService {
 
       await this.notificationsService.markMultipleAsReadAdmin(
         dto.notificationIds,
-      
       );
 
       return this.responseService.success(
@@ -305,18 +322,14 @@ export class AdminService {
     }
   }
 
-
-  //fetches 
+  //fetches
 
   // fetch all bids
   async Fetchallbids(
     dto: PaginationDto,
   ): Promise<StandardResponse<{ data: Bid[]; total: number }>> {
     try {
-      const { data: bids, total } = await this.BidRepository.fetchALL(
-        dto,
-        
-      );
+      const { data: bids, total } = await this.BidRepository.fetchALL(dto);
 
       return this.responseService.success(
         bids.length ? 'Bids retrived successfully' : 'No bids yet',
@@ -337,14 +350,9 @@ export class AdminService {
   }
 
   //fetch one bid by id
-  async FetchOneBid(
-    bidId: string,
-  ): Promise<StandardResponse<Bid>> {
+  async FetchOneBid(bidId: string): Promise<StandardResponse<Bid>> {
     try {
-      const bid = await this.BidRepository.findByID(
-        bidId,
-        
-      );
+      const bid = await this.BidRepository.findByID(bidId);
       if (!bid) return this.responseService.notFound('Bid not found');
 
       return this.responseService.success(
@@ -359,18 +367,11 @@ export class AdminService {
     }
   }
 
-
-
-
   async FetchAllOrders(
     dto: PaginationDto,
-   
   ): Promise<StandardResponse<{ data: Order[]; total: number }>> {
     try {
-      const { data: orders, total } =
-        await this.orderRepository.findAll(
-          dto,
-        );
+      const { data: orders, total } = await this.orderRepository.findAll(dto);
 
       return this.responseService.success(
         orders.length ? 'Orders retrived successfully' : 'No orders yet',
@@ -390,13 +391,9 @@ export class AdminService {
     }
   }
 
-  async FetchOneOrder(
-    orderID: string,
-  ): Promise<StandardResponse<Order>> {
+  async FetchOneOrder(orderID: string): Promise<StandardResponse<Order>> {
     try {
-      const order = await this.orderRepository.findByID(
-        orderID,
-      );
+      const order = await this.orderRepository.findByID(orderID);
       if (!order) return this.responseService.notFound('Order not found');
 
       return this.responseService.success(
@@ -413,13 +410,9 @@ export class AdminService {
 
   async FetchAllAdmins(
     dto: PaginationDto,
-   
   ): Promise<StandardResponse<{ data: Admin[]; total: number }>> {
     try {
-      const { data: orders, total } =
-        await this.adminRepo.find(
-          dto,
-        );
+      const { data: orders, total } = await this.adminRepo.find(dto);
 
       return this.responseService.success(
         orders.length ? 'Admins retrived successfully' : 'No admins yet',
@@ -439,13 +432,9 @@ export class AdminService {
     }
   }
 
-  async FetchOneAdmin(
-    id: number,
-  ): Promise<StandardResponse<Admin>> {
+  async FetchOneAdmin(id: number): Promise<StandardResponse<Admin>> {
     try {
-      const order = await this.adminRepo.findByID(
-        id,
-      );
+      const order = await this.adminRepo.findByID(id);
       if (!order) return this.responseService.notFound('admin not found');
 
       return this.responseService.success(
@@ -460,18 +449,11 @@ export class AdminService {
     }
   }
 
-
-
-
   async FetchAllCustomers(
     dto: PaginationDto,
-   
   ): Promise<StandardResponse<{ data: Customer[]; total: number }>> {
     try {
-      const { data: orders, total } =
-        await this.customerRepo.find(
-          dto,
-        );
+      const { data: orders, total } = await this.customerRepo.find(dto);
 
       return this.responseService.success(
         orders.length ? 'Customers retrived successfully' : 'No customers yet',
@@ -491,13 +473,9 @@ export class AdminService {
     }
   }
 
-  async FetchOneCustomer(
-    id: number,
-  ): Promise<StandardResponse<Customer>> {
+  async FetchOneCustomer(id: number): Promise<StandardResponse<Customer>> {
     try {
-      const order = await this.customerRepo.findByID(
-        id,
-      );
+      const order = await this.customerRepo.findByID(id);
       if (!order) return this.responseService.notFound('Customer not found');
 
       return this.responseService.success(
@@ -512,17 +490,11 @@ export class AdminService {
     }
   }
 
-
-
   async FetchAllRiders(
     dto: PaginationDto,
-   
   ): Promise<StandardResponse<{ data: Rider[]; total: number }>> {
     try {
-      const { data: orders, total } =
-        await this.riderRepo.find(
-          dto,
-        );
+      const { data: orders, total } = await this.riderRepo.find(dto);
 
       return this.responseService.success(
         orders.length ? 'Riders retrived successfully' : 'No riders yet',
@@ -542,13 +514,9 @@ export class AdminService {
     }
   }
 
-  async FetchOneRider(
-    id:number,
-  ): Promise<StandardResponse<Rider>> {
+  async FetchOneRider(id: number): Promise<StandardResponse<Rider>> {
     try {
-      const order = await this.riderRepo.findByID(
-        id,
-      );
+      const order = await this.riderRepo.findByID(id);
       if (!order) return this.responseService.notFound('Rider not found');
 
       return this.responseService.success(
@@ -563,20 +531,16 @@ export class AdminService {
     }
   }
 
-
-
   async FetchAllTransactions(
     dto: PaginationDto,
-   
   ): Promise<StandardResponse<{ data: Transactions[]; total: number }>> {
     try {
-      const { data: orders, total } =
-        await this.transactionRepo.find(
-          dto,
-        );
+      const { data: orders, total } = await this.transactionRepo.find(dto);
 
       return this.responseService.success(
-        orders.length ? 'Transactions retrived successfully' : 'No transactions yet',
+        orders.length
+          ? 'Transactions retrived successfully'
+          : 'No transactions yet',
         {
           data: orders,
           total,
@@ -597,9 +561,7 @@ export class AdminService {
     orderID: string,
   ): Promise<StandardResponse<Transactions>> {
     try {
-      const order = await this.transactionRepo.findByID(
-        orderID,
-      );
+      const order = await this.transactionRepo.findByID(orderID);
       if (!order) return this.responseService.notFound('transaction not found');
 
       return this.responseService.success(
@@ -614,8 +576,7 @@ export class AdminService {
     }
   }
 
-  ////searches 
-
+  ////searches
 
   async searchAdmin(
     searchDto: SearchDto,
@@ -643,7 +604,6 @@ export class AdminService {
     }
   }
 
-
   async searchCustomer(
     searchDto: SearchDto,
   ): Promise<StandardResponse<{ data: Customer[]; total: number }>> {
@@ -669,8 +629,6 @@ export class AdminService {
       );
     }
   }
-
-
 
   async searchRider(
     searchDto: SearchDto,
@@ -698,8 +656,6 @@ export class AdminService {
     }
   }
 
-
-
   async searchOrder(
     searchDto: SearchDto,
   ): Promise<StandardResponse<{ data: Order[]; total: number }>> {
@@ -725,8 +681,6 @@ export class AdminService {
       );
     }
   }
-
-
 
   async searchTrasaction(
     searchDto: SearchDto,
@@ -754,7 +708,6 @@ export class AdminService {
     }
   }
 
-
   async searchBid(
     searchDto: SearchDto,
   ): Promise<StandardResponse<{ data: Bid[]; total: number }>> {
@@ -777,6 +730,214 @@ export class AdminService {
       console.error(error);
       return this.responseService.internalServerError(
         'Error searching for a ticket',
+      );
+    }
+  }
+
+  async ApproveRider(
+    admin: AdminEntity,
+    riderID: number,
+    dto: AppproveRiderDto,
+  ): Promise<StandardResponse<any>> {
+    try {
+      const rider = await this.riderRepo.findByID(riderID);
+      if (!rider) return this.responseService.notFound('rider not found');
+
+      if (dto && dto.approve === true) {
+        rider.isAprroved = true;
+      }
+      const updatedRider = await this.riderRepo.save(rider);
+
+      //send mail to rider
+
+      //create wallet for rider
+      const walletAddress =
+        await this.genefratorService.generateWalletAddress();
+      const wallet = await this.walletRipo.create({
+        id: 0,
+        walletAddrress: walletAddress,
+        createdAt: new Date(),
+        rider: updatedRider,
+        balance: 0,
+        updatedAT: undefined,
+      });
+
+      // Save notification
+      await this.notificationsService.create({
+        message: `${rider.name} has been approved  by ${admin.name}.`,
+        subject: 'Rider Approved',
+        account: updatedRider.riderID,
+      });
+
+      return this.responseService.success(
+        'rider account approved and wallet created successfully',
+        {
+          ApprovedRider: updatedRider,
+          wallet: wallet,
+        },
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error approving a rider for truckways',
+        error.message,
+      );
+    }
+  }
+
+  async blockRider(
+    admin: AdminEntity,
+    riderID: number,
+    dto: BlockRiderDto,
+  ): Promise<StandardResponse<Rider>> {
+    try {
+      const rider = await this.riderRepo.findByID(riderID);
+      if (!rider) return this.responseService.notFound('rider not found');
+
+      if (dto && dto.block === true) {
+        rider.isBlocked = true;
+      }
+      const updatedRider = await this.riderRepo.save(rider);
+
+      // Save notification
+      await this.notificationsService.create({
+        message: `${rider.name} has been blocked  by ${admin.name}.`,
+        subject: 'Rider Blocked',
+        account: updatedRider.riderID,
+      });
+
+      return this.responseService.success(
+        'rider account blocked successfully',
+        updatedRider,
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error blocking a rider for truckways',
+        error.message,
+      );
+    }
+  }
+
+  async createPercentage(
+    admin: AdminEntity,
+    dto: CreatePercentageDto,
+  ): Promise<StandardResponse<PercentageConfig>> {
+    try {
+      const config = await this.percentageRepo.findByType(dto.type);
+      if (config)
+        return this.responseService.badRequest(`${dto.type} already exists`);
+
+      //create new config
+      const newConfig = await this.percentageRepo.create({
+        id: 0,
+        type: dto.type,
+        percentage: dto.percentage,
+        createdAT: new Date(),
+        updatedAT: undefined,
+        isActive: true,
+      });
+
+      // Save notification
+      await this.notificationsService.create({
+        message: `${admin.name} has configured ${dto.type} to ${dto.percentage}%.`,
+        subject: 'Percentage configuration',
+        account: admin.adminID,
+      });
+
+      return this.responseService.success(
+        'percentage configured successfully',
+        newConfig,
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error configuring percentages',
+        error.message,
+      );
+    }
+  }
+
+  async updatePercentage(
+    admin: AdminEntity,
+    dto: UpdatePercentageDto,
+    percentageId: number,
+  ): Promise<StandardResponse<PercentageConfig>> {
+    try {
+      const config = await this.percentageRepo.findByID(percentageId);
+      if (!config) return this.responseService.notFound('percentage not found');
+
+      // Update and get the updated configuration
+      const updatedConfig = await this.percentageRepo.save({
+        ...config,
+        percentage: dto.percentage,
+        updatedAT: new Date(),
+      });
+
+      // Save notification
+      await this.notificationsService.create({
+        message: `${admin.name} has re-configured ${config.type} with a new percent ${dto.percentage}%.`,
+        subject: 'Percentage configuration',
+        account: admin.adminID,
+      });
+
+      return this.responseService.success(
+        'percentage re-configured successfully',
+        updatedConfig, // Return the updated configuration
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error re-configuring percentages',
+        error.message,
+      );
+    }
+  }
+
+  async FetchAllPercentage(
+    dto: PaginationDto,
+  ): Promise<StandardResponse<{ data: PercentageConfig[]; total: number }>> {
+    try {
+      const { data: orders, total } = await this.percentageRepo.find(dto);
+
+      return this.responseService.success(
+        orders.length
+          ? 'Percentage configurations retrived successfully'
+          : 'No percentage configurations  yet',
+        {
+          data: orders,
+          total,
+          currentPage: dto.page,
+          pageSize: dto.limit,
+        },
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error fetching percentage configurations',
+        error.message,
+      );
+    }
+  }
+
+  async FetchOnePercentageConfiguration(
+    percentID: number,
+  ): Promise<StandardResponse<PercentageConfig>> {
+    try {
+      const order = await this.percentageRepo.findByID(percentID);
+      if (!order)
+        return this.responseService.notFound(
+          'percentage configuration not found not found',
+        );
+
+      return this.responseService.success(
+        'single percentage configuration  retrieved successfully',
+        order,
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error fetching one percentage configuration ',
+        error.message,
       );
     }
   }

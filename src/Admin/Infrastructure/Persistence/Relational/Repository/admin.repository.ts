@@ -1,10 +1,14 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { AdminRepository} from '../../admin-repository';
+import { AdminRepository, PercentageConfigRepository} from '../../admin-repository';
 import { AdminEntity } from '../Entity/admin.entity';
 import { Repository } from 'typeorm';
-import { AdminMapper } from '../Mapper/customer.mapper';
+import { AdminMapper } from '../Mapper/admin.mapper';
 import { Admin } from 'src/Admin/Domain/admin';
 import { PaginationDto, SearchDto } from 'src/utils/shared-dto/pagination.dto';
+import { PercentageConfigEntity } from '../Entity/percentage-configuration.entity';
+import { PercentageConfig } from 'src/Admin/Domain/percentage';
+import { PercentageConfigMapper } from '../Mapper/percentage.mapper';
+import { PercentageType } from 'src/Enums/percentage.enum';
 
 export class AdminRelationalRepository implements AdminRepository {
   constructor(
@@ -116,4 +120,79 @@ export class AdminRelationalRepository implements AdminRepository {
 
     return { data: admins, total };
   }
+}
+
+
+
+
+
+//percentage 
+export class PercentageConfigRelationalRepository implements PercentageConfigRepository {
+  constructor(
+    @InjectRepository(PercentageConfigEntity)
+    private percentageEntityRepository: Repository<PercentageConfigEntity>,
+  ) {}
+
+
+
+  async create(customer: PercentageConfig): Promise<PercentageConfig> {
+    const persistenceCustomer = PercentageConfigMapper.toPerisitence(customer);
+    const savedCustomer =
+      await this.percentageEntityRepository.save(persistenceCustomer);
+    return PercentageConfigMapper.toDomain(savedCustomer);
+  }
+
+  async findByID(id: number): Promise<PercentageConfig> {
+    const customer = await this.percentageEntityRepository.findOne({
+      where: { id: id },
+    });
+    return customer ? PercentageConfigMapper.toDomain(customer) : null;
+  }
+
+  async findByType(type:PercentageType): Promise<PercentageConfig> {
+    const customer = await this.percentageEntityRepository.findOne({
+      where: { type:type },
+    });
+    return customer ? PercentageConfigMapper.toDomain(customer) : null;
+  }
+
+
+
+  async find(dto: PaginationDto): Promise<{ data: PercentageConfig[]; total: number }> {
+    const { page, limit, sortBy, sortOrder } = dto;
+    const [result, total] = await this.percentageEntityRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sortBy]: sortOrder },
+      
+    });
+    const wallets = result.map(PercentageConfigMapper.toDomain);
+    return { data: wallets, total };
+  }
+
+  async update(id: number, customer: Partial<PercentageConfig>): Promise<PercentageConfig> {
+    await this.percentageEntityRepository.update(
+      id,
+      AdminMapper.toPerisitence(customer as Admin),
+    );
+    const updatedCustomer = await this.percentageEntityRepository.findOne({
+      where: { id: id },
+    });
+    return PercentageConfigMapper.toDomain(updatedCustomer);
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.percentageEntityRepository.delete(id);
+  }
+
+  async save(customer: PercentageConfig): Promise<PercentageConfig> {
+    const persistenceCustomer = PercentageConfigMapper.toPerisitence(customer);
+    const savedCustomer = await this.percentageEntityRepository.save(
+      persistenceCustomer,
+      { reload: true },
+    );
+
+    return PercentageConfigMapper.toDomain(savedCustomer);
+  }
+
 }

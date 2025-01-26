@@ -172,7 +172,7 @@ export class AdminAuthService {
       });
 
       return this.responseService.success(
-        'email verified successfully and customer Cart created',
+        'email verified successfully ',
         updatedAdmin,
       );
     } catch (error) {

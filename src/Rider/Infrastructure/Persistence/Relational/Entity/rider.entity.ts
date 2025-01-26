@@ -13,6 +13,7 @@ import { WalletEntity } from './wallet.entity';
 import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
 import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
 import { TransactionEntity } from './transaction.entity';
+import { RidesEntity } from './rides.entity';
 
 @Entity({ name: 'riders' })
 export class RiderEntity {
@@ -156,6 +157,10 @@ export class RiderEntity {
   my_wallet: BankEntity;
 
   //rides
+
+  @ApiProperty({type:()=>[RidesEntity]})
+  @OneToMany(()=>RidesEntity, ride=>ride.rider,{nullable:true,onDelete:'SET NULL'})
+  rides: RidesEntity[];
 
   //transactions 
 

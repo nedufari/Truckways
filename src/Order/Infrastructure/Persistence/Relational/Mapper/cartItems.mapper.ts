@@ -55,6 +55,8 @@ export class OrderItemsMapper {
     domainEntity.recipient_number = raw.recipient_number;
     domainEntity.truck_type = raw.truck_type;
     domainEntity.order = raw.order;
+    domainEntity.isDroppedOff = raw.isDroppedOff;
+    domainEntity.droppedOffAT = raw.droppedOffAT
     return domainEntity;
   }
 
@@ -74,6 +76,8 @@ export class OrderItemsMapper {
     persistenceEntity.recipient_number = domainEntity.recipient_number;
     persistenceEntity.truck_type = domainEntity.truck_type;
     persistenceEntity.initial_bid_value = domainEntity.initial_bid_value;
+    persistenceEntity.isDroppedOff = domainEntity.isDroppedOff;
+    persistenceEntity.droppedOffAT = domainEntity.droppedOffAT
     return persistenceEntity;
   }
 }

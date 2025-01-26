@@ -174,11 +174,15 @@ export class CustomerAuthService {
           'user associated to otp not found',
         );
 
-      // Update customer using proper update object
-      await this.customerRepository.update(customer.id, {
-        isVerified: true,
-        updatedAT: new Date(),
-      });
+      // // Update customer using proper update object
+      // await this.customerRepository.update(customer.id, {
+      //   isVerified: true,
+      //   updatedAT: new Date(),
+      // });
+
+      customer.isVerified = true,
+      customer.updatedAT = new Date()
+      await this.customerRepository.save(customer)
 
       // Fetch the updated customer
       const updatedCustomer = await this.customerRepository.findByEmail(

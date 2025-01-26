@@ -27,10 +27,13 @@ import {
   BidActionResult,
   BidStatus,
   BidTypeAccepted,
+  RideStatus,
 } from 'src/Enums/order.enum';
 import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
 import { Order } from 'src/Order/Domain/order';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
+import { RidesRepository } from 'src/Rider/Infrastructure/Persistence/rider-repository';
+import { GeneratorService } from 'src/utils/services/generator.service';
 //import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
 export class CustomerService {
@@ -44,6 +47,8 @@ export class CustomerService {
     private cartRepository: OrderCartRepository,
     private orderRepository: OrderRepository,
     private readonly eventsGateway: EventsGateway,
+    private ridesRepo:RidesRepository,
+    private generatorService: GeneratorService
     //private readonly pushNotificationService:PushNotificationsService,
   ) {}
 
@@ -433,6 +438,28 @@ export class CustomerService {
         order.accepted_bid = bid.counteredBid_value;
         order.Rider = bid.rider;
         await this.orderRepository.save(order);
+
+         //create a ride 
+         const ridesID = `TrkRd${await this.generatorService.generateUserID()}`;
+         await this.ridesRepo.create({
+           id: 0,
+           ridesID:ridesID,
+           milestone: undefined,
+           status: RideStatus.PENDING,
+           rider: order.Rider,
+           order: order,
+           checkpointStatus: undefined,
+           at_dropoff_locationAT: undefined,
+           at_pickup_locationAT: undefined,
+           enroute_to_dropoff_locationAT: undefined,
+           enroute_to_pickup_locationAT: undefined,
+           dropped_off_parcelAT: undefined,
+           reason_for_cancelling_ride: '',
+           isCancelled: false,
+           cancelledAt: undefined,
+           picked_up_parcelAT: undefined
+         })
+ 
 
         //emit websocket for accepted counter bid 
         this.eventsGateway.emitToconversation(

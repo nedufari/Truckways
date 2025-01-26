@@ -19,7 +19,11 @@ export class OrderMapper {
     domainEntity.customer = raw.customer;
     domainEntity.orderID = raw.orderID;
     domainEntity.createdAT = raw.createdAT;
-    domainEntity.paymentStatus = raw.paymentStatus
+    domainEntity.paymentStatus = raw.paymentStatus;
+    domainEntity.orderStatus = raw.orderStatus;
+    domainEntity.trackingID = raw.trackingID;
+    domainEntity.dropoffCode = raw.dropoffCode;
+    domainEntity.ride = raw.ride;
     return domainEntity;
   }
 
@@ -40,6 +44,10 @@ export class OrderMapper {
     persistenceEntity.orderID = domainEntity.orderID;
     persistenceEntity.createdAT = domainEntity.createdAT;
     persistenceEntity.paymentStatus = domainEntity.paymentStatus
+    persistenceEntity.orderStatus = domainEntity.orderStatus;
+    persistenceEntity.trackingID = domainEntity.trackingID;
+    persistenceEntity.dropoffCode = domainEntity.dropoffCode;
+    persistenceEntity.ride = domainEntity.ride
     return persistenceEntity;
   }
 }

@@ -4,12 +4,15 @@ import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Ent
 import {
   Column,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { BidEntity } from './bids.entity';
-import { PaymentStatus } from 'src/Enums/order.enum';
+import { OrderStatus, PaymentStatus } from 'src/Enums/order.enum';
+import { RidesEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rides.entity';
 
 @Entity({ name: 'orders' })
 export class OrderEntity {
@@ -24,6 +27,18 @@ export class OrderEntity {
   @ApiProperty({enum:PaymentStatus})
   @Column({nullable:true, type:'enum', enum:PaymentStatus})
   paymentStatus:PaymentStatus
+
+  @ApiProperty({enum:OrderStatus})
+  @Column({nullable:true, enum:OrderStatus, type:'enum'})
+  orderStatus:OrderStatus
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
+  trackingID: string;
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
+  dropoffCode: string;
 
   @ApiProperty({ type: Number })
   @Column('numeric', { nullable: true })
@@ -52,6 +67,11 @@ export class OrderEntity {
   @ApiProperty()
   @Column({nullable:true, type:'timestamp'})
   createdAT:Date
+
+  @ApiProperty({type:()=>RidesEntity})
+  @OneToOne(() => RidesEntity, (ride) => ride.order,{nullable:true})
+  @JoinColumn()
+  ride: RidesEntity;
 }
 
 @Entity({ name: 'order-Items' })
@@ -103,4 +123,16 @@ export class OrderItemsEntity {
   @ApiProperty({ type: () => OrderEntity })
   @ManyToOne(() => OrderEntity, (cart) => cart.items)
   order: OrderEntity;
+
+  @ApiProperty()
+  @Column({nullable:true, type:'timestamp'})
+  droppedOffAT : Date
+
+  @ApiProperty({type:Boolean})
+  @Column({nullable:true, type:'boolean'})
+  isDroppedOff : boolean
+
+
+
+  
 }

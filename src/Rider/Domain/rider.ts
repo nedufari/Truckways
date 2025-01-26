@@ -17,6 +17,7 @@ import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Ent
 import { WalletEntity } from '../Infrastructure/Persistence/Relational/Entity/wallet.entity';
 import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
 import { TransactionEntity } from '../Infrastructure/Persistence/Relational/Entity/transaction.entity';
+import { RidesEntity } from '../Infrastructure/Persistence/Relational/Entity/rides.entity';
 
 export class Rider {
   @ApiProperty({ type: Number })
@@ -147,4 +148,7 @@ export class Rider {
 
   @ApiProperty({ type: () => [TransactionEntity] })
   my_transactions: TransactionEntity[];
+
+  @ApiProperty({type:()=>[RidesEntity]})
+  rides: RidesEntity[];
 }

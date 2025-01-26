@@ -37,16 +37,21 @@ import { Bank } from './Domain/bank';
 import { BankDto } from './Dto/payment-profile.dto';
 import { Bid } from 'src/Order/Domain/bids';
 import { PaginationDto } from 'src/utils/shared-dto/pagination.dto';
-import { BidActionDto, CounterBidDto } from 'src/utils/shared-dto/bid-action.dto';
+import {
+  BidActionDto,
+  CounterBidDto,
+} from 'src/utils/shared-dto/bid-action.dto';
 import { BidActionResult } from 'src/Enums/order.enum';
 import { Order } from 'src/Order/Domain/order';
 import { RoleGuard } from 'src/Auth/Guard/role.guard';
 import { Roles } from 'src/Auth/Decorator/role.decorator';
 import { Role } from 'src/Enums/users.enum';
+import { Rides } from './Domain/rides';
+import { DropOffCodeDto } from './Dto/dropOff-code.dto';
 
 @ApiTags('Rider')
 @ApiBearerAuth()
-@UseGuards(JwtGuard,RoleGuard)
+@UseGuards(JwtGuard, RoleGuard)
 @Roles(Role.RIDER)
 @Controller({
   path: 'rider/',
@@ -184,12 +189,12 @@ export class RiderController {
       type: 'object',
       properties: {
         images: {
-            type: 'array',
-            items: {
-              type: 'string',
-              format: 'binary',
-            },
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
           },
+        },
         name: {
           type: 'string',
           nullable: false,
@@ -212,7 +217,6 @@ export class RiderController {
           type: 'string',
           nullable: true,
         },
-     
       },
     },
   })
@@ -248,12 +252,12 @@ export class RiderController {
       type: 'object',
       properties: {
         images: {
-            type: 'array',
-            items: {
-              type: 'string',
-              format: 'binary',
-            },
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
           },
+        },
         vehicleType: {
           type: 'string',
           nullable: false,
@@ -313,8 +317,6 @@ export class RiderController {
     return await this.riderService.PaymentProfile(req.user, dto);
   }
 
-
-
   @Get('all-available-bids')
   @ApiOkResponse({
     schema: {
@@ -356,14 +358,14 @@ export class RiderController {
     enum: ['ASC', 'DESC'],
     description: 'Sorting order',
   })
-  @ApiOperation({ summary: 'all  avialable bids related to an order and a customer' })
+  @ApiOperation({
+    summary: 'all  avialable bids related to an order and a customer',
+  })
   async fetchAllAvailableBids(
     @Query() dto: PaginationDto,
   ): Promise<StandardResponse<{ data: Bid[]; total: number }>> {
     return await this.riderService.FetchallbidsFromcustomer(dto);
   }
-
-
 
   @Get('one-bid/:BidID')
   @ApiOkResponse({
@@ -386,8 +388,6 @@ export class RiderController {
   ): Promise<StandardResponse<Bid>> {
     return await this.riderService.FetchOneBid(BidId);
   }
-
-
 
   @Get('all-my-involved-bids')
   @ApiOkResponse({
@@ -433,12 +433,10 @@ export class RiderController {
   @ApiOperation({ summary: 'all bids i have acepted as a rider' })
   async fetchAllMyBids(
     @Query() dto: PaginationDto,
-    @Req()req
+    @Req() req,
   ): Promise<StandardResponse<{ data: Bid[]; total: number }>> {
-    return await this.riderService.FetchallMyInvolvedBids(req.user,dto);
+    return await this.riderService.FetchallMyInvolvedBids(req.user, dto);
   }
-
-
 
   @Patch('bid-action/:BidID')
   @ApiOkResponse({
@@ -456,8 +454,7 @@ export class RiderController {
     },
   })
   @ApiOperation({
-    summary:
-      'accept or decline a bid sent in from the customer ',
+    summary: 'accept or decline a bid sent in from the customer ',
   })
   async AcceptOrDeclineBid(
     @Body() dto: BidActionDto,
@@ -470,7 +467,6 @@ export class RiderController {
       dto,
     );
   }
-
 
   @Patch('counter-bid/:BidID')
   @ApiOkResponse({
@@ -488,23 +484,15 @@ export class RiderController {
     },
   })
   @ApiOperation({
-    summary:
-      'counter a bid from a customer ',
+    summary: 'counter a bid from a customer ',
   })
   async CounterBid(
     @Body() dto: CounterBidDto,
     @Req() req,
     @Param('BidID') BidId: string,
   ): Promise<StandardResponse<Bid>> {
-    return await this.riderService.CounterBid(
-      req.user,
-      BidId,
-      dto,
-    );
+    return await this.riderService.CounterBid(req.user, BidId, dto);
   }
-
-
-
 
   @Get('one-order/:orderID')
   @ApiOkResponse({
@@ -528,14 +516,14 @@ export class RiderController {
     return await this.riderService.FetchOneOrder(orderId);
   }
 
-
-
   @Get('all-my-accepted-orders')
   @ApiOkResponse({
     schema: {
       allOf: [
         {
-          $ref: getSchemaPath(StandardResponse<{ data: Order[]; total: number }>),
+          $ref: getSchemaPath(
+            StandardResponse<{ data: Order[]; total: number }>,
+          ),
         },
         {
           properties: {
@@ -574,8 +562,159 @@ export class RiderController {
   @ApiOperation({ summary: 'all orders i have acepted as a rider' })
   async fetchAllMyOrder(
     @Query() dto: PaginationDto,
-    @Req()req
+    @Req() req,
   ): Promise<StandardResponse<{ data: Order[]; total: number }>> {
-    return await this.riderService.FetchAllMyOrders(dto,req.user);
+    return await this.riderService.FetchAllMyOrders(dto, req.user);
+  }
+
+  @Patch('checkpoint/enroute-to-pickupLocation/:rideID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Rides>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Rides),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'enroute to pickup location  ',
+  })
+  async EnrouteToPickup(
+    @Req() req,
+    @Param('rideID') rideID: string,
+  ): Promise<StandardResponse<Rides>> {
+    return await this.riderService.enrouteToPickupLocation(req.user, rideID);
+  }
+
+  @Patch('checkpoint/at-pickupLocation/:rideID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Rides>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Rides),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'at  pickup location  ',
+  })
+  async AtPickupLocation(
+    @Req() req,
+    @Param('rideID') rideID: string,
+  ): Promise<StandardResponse<Rides>> {
+    return await this.riderService.AtPickupLocation(req.user, rideID);
+  }
+
+  @Patch('checkpoint/picked-upParcel/:rideID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Rides>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Rides),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'picked up parcel  ',
+  })
+  async PickedUpParcel(
+    @Req() req,
+    @Param('rideID') rideID: string,
+  ): Promise<StandardResponse<Rides>> {
+    return await this.riderService.PickedUpParcel(req.user, rideID);
+  }
+
+  @Patch('checkpoint/enroute-to-dropOffLocation/:rideID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Rides>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Rides),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'enroute to dropOff location  ',
+  })
+  async EnrouteToDropOffLocation(
+    @Req() req,
+    @Param('rideID') rideID: string,
+  ): Promise<StandardResponse<Rides>> {
+    return await this.riderService.enrouteToDropOffLocation(req.user, rideID);
+  }
+
+  @Patch('checkpoint/at-dropOffLocation/:rideID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Rides>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Rides),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'at dropoff location  ',
+  })
+  async AtDropOfflocation(
+    @Req() req,
+    @Param('rideID') rideID: string,
+  ): Promise<StandardResponse<Rides>> {
+    return await this.riderService.enrouteToPickupLocation(req.user, rideID);
+  }
+
+  @Patch('checkpoint/droppedOff-parcel/:rideID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Rides>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Rides),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'droppedOff Parcel  ',
+  })
+  async DroppedOffParcel(
+    @Req() req,
+    @Param('rideID') rideID: string,
+    @Body() dto: DropOffCodeDto,
+  ): Promise<StandardResponse<Rides>> {
+    return await this.riderService.dropOffParcel(req.user, rideID, dto);
   }
 }

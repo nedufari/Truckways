@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   Req,
   UploadedFile,
@@ -43,10 +44,13 @@ import { Role } from 'src/Enums/users.enum';
 import { Customer } from 'src/Customer/Domain/customer';
 import { Rider } from 'src/Rider/Domain/rider';
 import { Transactions } from 'src/Rider/Domain/transaction';
+import { AppproveRiderDto, BlockRiderDto } from './Dto/approve-rider.dto';
+import { CreatePercentageDto, UpdatePercentageDto } from './Dto/percentage-config.dto';
+import { PercentageConfig } from './Domain/percentage';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
-@UseGuards(JwtGuard,RoleGuard)
+@UseGuards(JwtGuard, RoleGuard)
 @Roles(Role.ADMIN)
 @Controller({
   path: 'admin/',
@@ -120,10 +124,7 @@ export class AdminController {
     @Req() req,
     @Param('notificationId') notificationId: string,
   ) {
-    return this.adminService.markNotificationAsRead(
-      req.user,
-      notificationId,
-    );
+    return this.adminService.markNotificationAsRead(req.user, notificationId);
   }
 
   @Patch('mark-multiple-as-read')
@@ -244,7 +245,6 @@ export class AdminController {
     return await this.adminService.uploadUserProfilePics(req.user, file);
   }
 
-
   @Get('all-bids')
   @ApiOkResponse({
     schema: {
@@ -289,10 +289,8 @@ export class AdminController {
   @ApiOperation({ summary: 'all bids related to an order and a customer' })
   async fetchAlBids(
     @Query() dto: PaginationDto,
-    
   ): Promise<StandardResponse<{ data: Bid[]; total: number }>> {
-   ;
-    return await this.adminService.Fetchallbids( dto);
+    return await this.adminService.Fetchallbids(dto);
   }
 
   @Get('one-bid/:BidID')
@@ -312,16 +310,10 @@ export class AdminController {
   })
   @ApiOperation({ summary: 'fetch one bid' })
   async FetccOneBid(
-  
     @Param('BidID') BidId: string,
   ): Promise<StandardResponse<Bid>> {
-    return await this.adminService.FetchOneBid( BidId);
+    return await this.adminService.FetchOneBid(BidId);
   }
-
-  
-
-
-
 
   @Get('one-order/:orderID')
   @ApiOkResponse({
@@ -345,14 +337,14 @@ export class AdminController {
     return await this.adminService.FetchOneOrder(orderId);
   }
 
-
-
   @Get('all-orders')
   @ApiOkResponse({
     schema: {
       allOf: [
         {
-          $ref: getSchemaPath(StandardResponse<{ data: Order[]; total: number }>),
+          $ref: getSchemaPath(
+            StandardResponse<{ data: Order[]; total: number }>,
+          ),
         },
         {
           properties: {
@@ -391,12 +383,10 @@ export class AdminController {
   @ApiOperation({ summary: 'all orders i have placed' })
   async fetchAllMyOrder(
     @Query() dto: PaginationDto,
-    @Req()req
+    @Req() req,
   ): Promise<StandardResponse<{ data: Order[]; total: number }>> {
     return await this.adminService.FetchAllOrders(dto);
   }
-
-
 
   @Get('one-customer/:customerID')
   @ApiOkResponse({
@@ -420,20 +410,19 @@ export class AdminController {
     return await this.adminService.FetchOneCustomer(orderId);
   }
 
-
-
   @Get('all-customers')
   @ApiOkResponse({
     schema: {
       allOf: [
         {
-          $ref: getSchemaPath(StandardResponse<{ data: Customer[]; total: number }>),
+          $ref: getSchemaPath(
+            StandardResponse<{ data: Customer[]; total: number }>,
+          ),
         },
         {
           properties: {
             payload: {
-              $ref: getSchemaPath(
-                Customer),
+              $ref: getSchemaPath(Customer),
             },
           },
         },
@@ -467,14 +456,10 @@ export class AdminController {
   @ApiOperation({ summary: 'all customers' })
   async fetchAllcustomers(
     @Query() dto: PaginationDto,
-    @Req()req
+    @Req() req,
   ): Promise<StandardResponse<{ data: Customer[]; total: number }>> {
     return await this.adminService.FetchAllCustomers(dto);
   }
-
-
-
-
 
   @Get('one-admin/:adminID')
   @ApiOkResponse({
@@ -498,20 +483,19 @@ export class AdminController {
     return await this.adminService.FetchOneAdmin(orderId);
   }
 
-
-
   @Get('all-admins')
   @ApiOkResponse({
     schema: {
       allOf: [
         {
-          $ref: getSchemaPath(StandardResponse<{ data: Admin[]; total: number }>),
+          $ref: getSchemaPath(
+            StandardResponse<{ data: Admin[]; total: number }>,
+          ),
         },
         {
           properties: {
             payload: {
-              $ref: getSchemaPath(
-                Admin),
+              $ref: getSchemaPath(Admin),
             },
           },
         },
@@ -545,7 +529,7 @@ export class AdminController {
   @ApiOperation({ summary: 'all admins' })
   async fetchAllAdmins(
     @Query() dto: PaginationDto,
-    @Req()req
+    @Req() req,
   ): Promise<StandardResponse<{ data: Admin[]; total: number }>> {
     return await this.adminService.FetchAllAdmins(dto);
   }
@@ -572,20 +556,19 @@ export class AdminController {
     return await this.adminService.FetchOneRider(orderId);
   }
 
-
-
   @Get('all-riders')
   @ApiOkResponse({
     schema: {
       allOf: [
         {
-          $ref: getSchemaPath(StandardResponse<{ data: Rider[]; total: number }>),
+          $ref: getSchemaPath(
+            StandardResponse<{ data: Rider[]; total: number }>,
+          ),
         },
         {
           properties: {
             payload: {
-              $ref: getSchemaPath(
-                Rider),
+              $ref: getSchemaPath(Rider),
             },
           },
         },
@@ -619,12 +602,10 @@ export class AdminController {
   @ApiOperation({ summary: 'all riders' })
   async fetchAllriders(
     @Query() dto: PaginationDto,
-    @Req()req
+    @Req() req,
   ): Promise<StandardResponse<{ data: Rider[]; total: number }>> {
     return await this.adminService.FetchAllRiders(dto);
   }
-
-
 
   @Get('one-transaction/:tranID')
   @ApiOkResponse({
@@ -648,20 +629,19 @@ export class AdminController {
     return await this.adminService.FetchOneTransaction(orderId);
   }
 
-
-
   @Get('all-transactions')
   @ApiOkResponse({
     schema: {
       allOf: [
         {
-          $ref: getSchemaPath(StandardResponse<{ data: Customer[]; total: number }>),
+          $ref: getSchemaPath(
+            StandardResponse<{ data: Customer[]; total: number }>,
+          ),
         },
         {
           properties: {
             payload: {
-              $ref: getSchemaPath(
-                Customer),
+              $ref: getSchemaPath(Customer),
             },
           },
         },
@@ -695,15 +675,12 @@ export class AdminController {
   @ApiOperation({ summary: 'all transactions' })
   async fetchAlltransations(
     @Query() dto: PaginationDto,
-    @Req()req
+    @Req() req,
   ): Promise<StandardResponse<{ data: Transactions[]; total: number }>> {
     return await this.adminService.FetchAllTransactions(dto);
   }
 
-
-
-
-///searches and queries 
+  ///searches and queries
   @Get('search-admin')
   @ApiOkResponse({
     schema: {
@@ -756,7 +733,6 @@ export class AdminController {
   ): Promise<StandardResponse<{ data: Admin[]; total: number }>> {
     return await this.adminService.searchAdmin(dto);
   }
-
 
   @Get('search-customer')
   @ApiOkResponse({
@@ -811,9 +787,6 @@ export class AdminController {
     return await this.adminService.searchCustomer(dto);
   }
 
-
-
-
   @Get('search-rider')
   @ApiOkResponse({
     schema: {
@@ -866,8 +839,6 @@ export class AdminController {
   ): Promise<StandardResponse<{ data: Rider[]; total: number }>> {
     return await this.adminService.searchRider(dto);
   }
-
-
 
   @Get('search-order')
   @ApiOkResponse({
@@ -922,9 +893,6 @@ export class AdminController {
     return await this.adminService.searchOrder(dto);
   }
 
-
-
-
   @Get('search-transaction')
   @ApiOkResponse({
     schema: {
@@ -978,16 +946,12 @@ export class AdminController {
     return await this.adminService.searchTrasaction(dto);
   }
 
-
-
   @Get('search-bid')
   @ApiOkResponse({
     schema: {
       allOf: [
         {
-          $ref: getSchemaPath(
-            StandardResponse<{ data: Bid[]; total: number }>,
-          ),
+          $ref: getSchemaPath(StandardResponse<{ data: Bid[]; total: number }>),
         },
         {
           properties: {
@@ -1033,7 +997,190 @@ export class AdminController {
     return await this.adminService.searchBid(dto);
   }
 
+  @Patch('approve-rider/:riderID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(StandardResponse<any>),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Rider),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'approve a rider',
+  })
+  async approveRider(
+    @Req() req,
+    @Param('riderID') riderID: number,
+    @Body() dto: AppproveRiderDto,
+  ): Promise<StandardResponse<any>> {
+    return await this.adminService.ApproveRider(req.user, riderID, dto);
+  }
+
+  @Patch('block-rider/:riderID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(StandardResponse<Rider>),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Rider),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'block a rider',
+  })
+  async blockRider(
+    @Req() req,
+    @Param('riderID') riderID: number,
+    @Body() dto: BlockRiderDto,
+  ): Promise<StandardResponse<Rider>> {
+    return await this.adminService.blockRider(req.user, riderID, dto);
+  }
+
+  @Post('configure-percentage')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(StandardResponse<PercentageConfig>),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(PercentageConfig),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'configure percentage',
+  })
+  async configurePayment(
+    @Req() req,
+    @Body() dto: CreatePercentageDto,
+  ): Promise<StandardResponse<PercentageConfig>> {
+    return await this.adminService.createPercentage(req.user, dto);
+  }
 
 
+  @Patch('re-configurePercentage/:percentageID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(StandardResponse<PercentageConfig>),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(PercentageConfig),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 're-configure percentage',
+  })
+  async ReconfigurePayment(
+    @Req() req,
+    @Body() dto: UpdatePercentageDto,
+    @Param('percentageID') percentageID:number
+  ): Promise<StandardResponse<PercentageConfig>> {
+    return await this.adminService.updatePercentage(req.user, dto,percentageID);
+  }
 
+
+  @Get('one-percentage-config/:percentageID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<
+          PercentageConfig>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(PercentageConfig),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'fetch one percentage config' })
+  async FetchOnePercentage(
+    @Param('percentageID') orderId: number,
+  ): Promise<StandardResponse<PercentageConfig>> {
+    return await this.adminService.FetchOnePercentageConfiguration(orderId);
+  }
+
+  @Get('all-percentage-config')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(
+            StandardResponse<{ data: PercentageConfig[]; total: number }>,
+          ),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(PercentageConfig),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: 'number',
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: 'number',
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: 'string',
+    description: 'Sorting field',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sorting order',
+  })
+  @ApiOperation({ summary: 'all percentage config' })
+  async fetchAllPercentage(
+    @Query() dto: PaginationDto,
+    @Req() req,
+  ): Promise<StandardResponse<{ data: PercentageConfig[]; total: number }>> {
+    return await this.adminService.FetchAllPercentage(dto);
+  }
 }

@@ -137,7 +137,8 @@ export class RiderAuthService {
           bank_details: undefined,
           accepted_orders: [],
           accepted_bids:[],
-          my_transactions:[]
+          my_transactions:[],
+          rides:[]
       });
 
       //save notification

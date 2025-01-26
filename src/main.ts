@@ -22,6 +22,9 @@ import { NotificationsEntity } from './utils/shared-entities/notification.entity
 import { OtpEntity } from './utils/shared-entities/otp.entity';
 import { Bid } from './Order/Domain/bids';
 import { Transactions } from './Rider/Domain/transaction';
+import { Rides } from './Rider/Domain/rides';
+import { Admin } from './Admin/Domain/admin';
+import { PercentageConfig } from './Admin/Domain/percentage';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
@@ -71,7 +74,10 @@ async function bootstrap() {
       NotificationsEntity,
       OtpEntity,
       Bid,
-      Transactions
+      Transactions,
+      Admin,
+      Rides,
+      PercentageConfig
       
       
     ],

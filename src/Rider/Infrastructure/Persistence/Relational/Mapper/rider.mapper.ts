@@ -3,6 +3,7 @@ import { Rider } from 'src/Rider/Domain/rider';
 import { OrderMapper } from 'src/Order/Infrastructure/Persistence/Relational/Mapper/order.mapper';
 import { BidMapper } from 'src/Order/Infrastructure/Persistence/Relational/Mapper/bids.mapper';
 import { TransactionMapper } from './transaction.mapper';
+import { RidesMapper } from './rides.mapper';
 
 export class RiderMapper {
   static toDomain(raw: RiderEntity): Rider {
@@ -38,6 +39,10 @@ export class RiderMapper {
 
     domainEntity.my_transactions = raw.my_transactions
       ? raw.my_transactions.map((trans) => TransactionMapper.toDomain(trans))
+      : [];
+
+    domainEntity.rides = raw.rides
+      ? raw.rides.map((ride) => RidesMapper.toDomain(ride))
       : [];
 
     return domainEntity;
@@ -85,6 +90,10 @@ export class RiderMapper {
       ? domainEntity.my_transactions.map((trans) =>
           TransactionMapper.toPersistence(trans),
         )
+      : [];
+
+    persistenceEntity.rides = domainEntity.rides
+      ? domainEntity.rides.map((ride) => RidesMapper.toPerisitence(ride))
       : [];
     return persistenceEntity;
   }

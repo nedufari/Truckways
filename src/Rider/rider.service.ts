@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   BankRepository,
   RiderRepository,
+  RidesRepository,
   VehicleRepository,
   WalletRepository,
 } from './Infrastructure/Persistence/rider-repository';
@@ -24,7 +25,11 @@ import { Bank } from './Domain/bank';
 import { NotificationListResponse } from 'src/utils/Types/notification.responsetypes';
 import { NotificationsEntity } from 'src/utils/shared-entities/notification.entity';
 import { markMultipleNotificationsAsReadDto } from 'src/utils/shared-dto/notification.dto';
-import { BidRepository, OrderRepository } from 'src/Order/Infrastructure/Persistence/all-order-repositories';
+import {
+  BidRepository,
+  OrderItemRepository,
+  OrderRepository,
+} from 'src/Order/Infrastructure/Persistence/all-order-repositories';
 import { PaginationDto } from 'src/utils/shared-dto/pagination.dto';
 import { Bid } from 'src/Order/Domain/bids';
 import {
@@ -36,16 +41,24 @@ import {
   BidActionResult,
   BidStatus,
   BidTypeAccepted,
+  OrderStatus,
+  PaymentStatus,
+  RideStatus,
+  RiderMileStones,
 } from 'src/Enums/order.enum';
 import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
 import { Order } from 'src/Order/Domain/order';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
+import { Rides } from './Domain/rides';
+import { DropOffCodeDto } from './Dto/dropOff-code.dto';
+import { RiderStatus } from 'src/Enums/users.enum';
 //import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
 export class RiderService {
   constructor(
     private riderRepository: RiderRepository,
-    private orderRepository:OrderRepository,
+    private orderRepository: OrderRepository,
+    private orderItemRepo: OrderItemRepository,
     private bankRepository: BankRepository,
     private walletRepository: WalletRepository,
     private vehicleRepository: VehicleRepository,
@@ -56,6 +69,7 @@ export class RiderService {
     private generatorService: GeneratorService,
     private bidRepository: BidRepository,
     private readonly eventsGateway: EventsGateway,
+    private ridesRepo: RidesRepository,
     //private readonly pushNotificationService:PushNotificationsService
   ) {}
 
@@ -471,15 +485,14 @@ export class RiderService {
         );
       }
 
-       // Start WebSocket conversation between rider and customer
-       this.eventsGateway.startconversation(
+      // Start WebSocket conversation between rider and customer
+      this.eventsGateway.startconversation(
         bid.order.orderID,
         rider.riderID,
-        bid.order.customer.customerID
+        bid.order.customer.customerID,
       );
 
       const action = dto.doYouAccept ? BidAction.ACCEPT : BidAction.DECLINE;
-
 
       const result = await this.processBidAction(action, bid, rider);
 
@@ -510,27 +523,48 @@ export class RiderService {
           rider: rider,
         });
 
-        //update the rorder with rider and the value 
-        const order =  await this.orderRepository.findByID(bid.order.orderID)
-        order.accepted_bid =  bid.initialBid_value;
-        order.Rider =bid.rider;
-        await this.orderRepository.save(order)
+        //update the rorder with rider and the value
+        const order = await this.orderRepository.findByID(bid.order.orderID);
+        order.accepted_bid = bid.initialBid_value;
+        order.Rider = bid.rider;
+        await this.orderRepository.save(order);
 
-          // Emit WebSocket event for accepting initial bid
-          this.eventsGateway.emitToconversation(
-            bid.order.orderID,
-            'acceptInitialBid',
-            {
-              orderId: bid.order.orderID,
-              bidstatus: true,
-              acceptedAmount: bid.initialBid_value,
-              riderDetails: {
-                riderId: rider.riderID,
-                name: rider.name,
-              },
-              timestamp: new Date().getTime(),
-            }
-          );
+        //create a ride
+        const ridesID = `TrkRd${await this.generatorService.generateUserID()}`;
+        await this.ridesRepo.create({
+          id: 0,
+          ridesID: ridesID,
+          milestone: undefined,
+          status: RideStatus.PENDING,
+          rider: order.Rider,
+          order: order,
+          checkpointStatus: undefined,
+          at_dropoff_locationAT: undefined,
+          at_pickup_locationAT: undefined,
+          enroute_to_dropoff_locationAT: undefined,
+          enroute_to_pickup_locationAT: undefined,
+          dropped_off_parcelAT: undefined,
+          reason_for_cancelling_ride: '',
+          isCancelled: false,
+          cancelledAt: undefined,
+          picked_up_parcelAT: undefined,
+        });
+
+        // Emit WebSocket event for accepting initial bid
+        this.eventsGateway.emitToconversation(
+          bid.order.orderID,
+          'acceptInitialBid',
+          {
+            orderId: bid.order.orderID,
+            bidstatus: true,
+            acceptedAmount: bid.initialBid_value,
+            riderDetails: {
+              riderId: rider.riderID,
+              name: rider.name,
+            },
+            timestamp: new Date().getTime(),
+          },
+        );
 
         await this.notificationsService.create({
           message: ` ${rider.name},  has accepted a bid placed by ${bid.order.customer.name} .`,
@@ -551,9 +585,6 @@ export class RiderService {
         //   'openning bid accepted'
         // )
 
-
-        
-
         return {
           success: true,
           message:
@@ -568,8 +599,8 @@ export class RiderService {
           declinedAT: new Date(),
         });
 
-         // Emit WebSocket event for declining initial bid
-         this.eventsGateway.emitToconversation(
+        // Emit WebSocket event for declining initial bid
+        this.eventsGateway.emitToconversation(
           bid.order.orderID,
           'declineInitialBid',
           {
@@ -580,7 +611,7 @@ export class RiderService {
               name: rider.name,
             },
             timestamp: new Date().getTime(),
-          }
+          },
         );
 
         await this.notificationsService.create({
@@ -595,15 +626,12 @@ export class RiderService {
           account: bid.order.customer.customerID,
         });
 
-       
         //  //push notification
         //  this.pushNotificationService.sendPushNotification(
         //   bid.order.customer.deviceToken,
         //   'Bid Declined',
         //   'openning bid declined'
         // )
-
-       
 
         return {
           success: true,
@@ -640,32 +668,28 @@ export class RiderService {
 
       const savedBid = await this.bidRepository.update(bid.id, updatedBid);
 
-        // Start WebSocket conversation if not already started
-        this.eventsGateway.startconversation(
-          bid.order.orderID,
-          rider.riderID,
-          bid.order.customer.customerID
-        );
-  
-        // Emit WebSocket event for counter bid
-        this.eventsGateway.emitToconversation(
-          bid.order.orderID,
-          'counterBid',
-          {
-            orderId: bid.order.orderID,
-            bidAmount: dto.counterOffer,
-            riderDetails: {
-              riderId: rider.riderID,
-              name: rider.name,
-            },
-            previousAmount: bid.initialBid_value,
-            timestamp: new Date().getTime(),
-            message:  'Counter offer submitted',
-          }
-        );
+      // Start WebSocket conversation if not already started
+      this.eventsGateway.startconversation(
+        bid.order.orderID,
+        rider.riderID,
+        bid.order.customer.customerID,
+      );
 
-       // Create notification for the customer
-       await this.notificationsService.create({
+      // Emit WebSocket event for counter bid
+      this.eventsGateway.emitToconversation(bid.order.orderID, 'counterBid', {
+        orderId: bid.order.orderID,
+        bidAmount: dto.counterOffer,
+        riderDetails: {
+          riderId: rider.riderID,
+          name: rider.name,
+        },
+        previousAmount: bid.initialBid_value,
+        timestamp: new Date().getTime(),
+        message: 'Counter offer submitted',
+      });
+
+      // Create notification for the customer
+      await this.notificationsService.create({
         message: `${rider.name} has countered your bid with an offer of ${dto.counterOffer}`,
         subject: 'Bid Countered',
         account: bid.order.customer.customerID,
@@ -678,15 +702,12 @@ export class RiderService {
         account: bid.rider.riderID,
       });
 
-    
-       //push notification
+      //push notification
       //  this.pushNotificationService.sendPushNotification(
       //   bid.order.customer.deviceToken,
       //   'Bid Countered',
       //   'openning bid countered'
       // )
-
-     
 
       return this.responseService.success(
         'Bid countered successfully',
@@ -701,17 +722,13 @@ export class RiderService {
     }
   }
 
-
   async FetchAllMyOrders(
     dto: PaginationDto,
     rider: RiderEntity,
   ): Promise<StandardResponse<{ data: Order[]; total: number }>> {
     try {
       const { data: orders, total } =
-        await this.orderRepository.findAllRelatedToRider(
-          rider.riderID,
-          dto,
-        );
+        await this.orderRepository.findAllRelatedToRider(rider.riderID, dto);
 
       return this.responseService.success(
         orders.length ? 'Orders retrived successfully' : 'No orders yet',
@@ -731,13 +748,9 @@ export class RiderService {
     }
   }
 
-  async FetchOneOrder(
-    orderID: string,
-  ): Promise<StandardResponse<Order>> {
+  async FetchOneOrder(orderID: string): Promise<StandardResponse<Order>> {
     try {
-      const order = await this.orderRepository.findByID(
-        orderID,
-      );
+      const order = await this.orderRepository.findByID(orderID);
       if (!order) return this.responseService.notFound('Order not found');
 
       return this.responseService.success(
@@ -747,6 +760,296 @@ export class RiderService {
     } catch (error) {
       return this.responseService.internalServerError(
         'Error fetching one order',
+        error.message,
+      );
+    }
+  }
+
+  //rides
+  async enrouteToPickupLocation(
+    rider: RiderEntity,
+    ridesID: string,
+  ): Promise<StandardResponse<Rides>> {
+    try {
+      const rides = await this.ridesRepo.findByID(ridesID);
+      if (!rides) return this.responseService.notFound('ride not found');
+
+      if (rides.order.paymentStatus !== PaymentStatus.SUCCESFUL) {
+        return this.responseService.badRequest(
+          'Payment has not been confirmed yet, so you cannot start this ride',
+        );
+      }
+
+      rides.milestone = RiderMileStones.ENROUTE_TO_PICKUP_LOCATION;
+      rides.enroute_to_pickup_locationAT = new Date();
+      rides.checkpointStatus = {
+        ...rides.checkpointStatus,
+        enroute_to_pickup_location: true,
+      };
+      await this.ridesRepo.save(rides);
+
+      const savedRide = await this.ridesRepo.findByID(rides.ridesID);
+
+      //update order
+      rides.order.orderStatus = OrderStatus.ONGOING;
+      await this.orderRepository.save(rides.order);
+
+      await this.notificationsService.create({
+        message: `${rides.milestone} milestone reached for this order ${rides.order.orderID}`,
+        subject: 'MileStone Reached',
+        account: rider.riderID,
+      });
+
+      return this.responseService.success(
+        'milestone reached and checkpoint status updated successfully',
+        savedRide,
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error updating milestone',
+      );
+    }
+  }
+
+  async AtPickupLocation(
+    rider: RiderEntity,
+    ridesID: string,
+  ): Promise<StandardResponse<Rides>> {
+    try {
+      const rides = await this.ridesRepo.findByID(ridesID);
+      if (!rides) return this.responseService.notFound('ride not found');
+
+      rides.milestone = RiderMileStones.AT_PICKUP_LOCATION;
+      rides.enroute_to_dropoff_locationAT = new Date();
+      rides.checkpointStatus = {
+        ...rides.checkpointStatus,
+        at_pickup_location: true,
+      };
+      await this.ridesRepo.save(rides);
+
+      const savedRide = await this.ridesRepo.findByID(rides.ridesID);
+
+      //update order
+      rides.order.orderStatus = OrderStatus.ONGOING;
+      await this.orderRepository.save(rides.order);
+
+      await this.notificationsService.create({
+        message: `${rides.milestone} milestone reached for this order ${rides.order.orderID}`,
+        subject: 'MileStone Reached',
+        account: rider.riderID,
+      });
+
+      return this.responseService.success(
+        'milestone reached and checkpoint status updated successfully',
+        savedRide,
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error updating milestone',
+      );
+    }
+  }
+
+  async PickedUpParcel(
+    rider: RiderEntity,
+    ridesID: string,
+  ): Promise<StandardResponse<Rides>> {
+    try {
+      const rides = await this.ridesRepo.findByID(ridesID);
+      if (!rides) return this.responseService.notFound('ride not found');
+
+      rides.milestone = RiderMileStones.PICKED_UP_PARCEL;
+      rides.enroute_to_dropoff_locationAT = new Date();
+      rides.checkpointStatus = {
+        ...rides.checkpointStatus,
+        picked_up_parcel: true,
+      };
+      await this.ridesRepo.save(rides);
+
+      const savedRide = await this.ridesRepo.findByID(rides.ridesID);
+
+      //update order
+      rides.order.orderStatus = OrderStatus.ONGOING;
+      await this.orderRepository.save(rides.order);
+
+      await this.notificationsService.create({
+        message: `${rides.milestone} milestone reached for this order ${rides.order.orderID}`,
+        subject: 'MileStone Reached',
+        account: rider.riderID,
+      });
+
+      return this.responseService.success(
+        'milestone reached and checkpoint status updated successfully',
+        savedRide,
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error updating milestone',
+      );
+    }
+  }
+
+  async enrouteToDropOffLocation(
+    rider: RiderEntity,
+    ridesID: string,
+  ): Promise<StandardResponse<Rides>> {
+    try {
+      const rides = await this.ridesRepo.findByID(ridesID);
+      if (!rides) return this.responseService.notFound('ride not found');
+
+      rides.milestone = RiderMileStones.ENROUTE_TO_DROPOFF_LOCATION;
+      rides.enroute_to_dropoff_locationAT = new Date();
+      rides.checkpointStatus = {
+        ...rides.checkpointStatus,
+        enroute_to_dropoff_location: true,
+      };
+      await this.ridesRepo.save(rides);
+
+      const savedRide = await this.ridesRepo.findByID(rides.ridesID);
+
+      //update order
+      rides.order.orderStatus = OrderStatus.ONGOING;
+      await this.orderRepository.save(rides.order);
+
+      await this.notificationsService.create({
+        message: `${rides.milestone} milestone reached for this order ${rides.order.orderID}`,
+        subject: 'MileStone Reached',
+        account: rider.riderID,
+      });
+
+      return this.responseService.success(
+        'milestone reached and checkpoint status updated successfully',
+        savedRide,
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error updating milestone',
+      );
+    }
+  }
+
+  async AtDropOffLocation(
+    rider: RiderEntity,
+    ridesID: string,
+  ): Promise<StandardResponse<Rides>> {
+    try {
+      const rides = await this.ridesRepo.findByID(ridesID);
+      if (!rides) return this.responseService.notFound('ride not found');
+
+      rides.milestone = RiderMileStones.AT_DROPOFF_LOCATION;
+      rides.enroute_to_dropoff_locationAT = new Date();
+      rides.checkpointStatus = {
+        ...rides.checkpointStatus,
+        at_dropoff_location: true,
+      };
+      await this.ridesRepo.save(rides);
+
+      const savedRide = await this.ridesRepo.findByID(rides.ridesID);
+
+      //update order
+      rides.order.orderStatus = OrderStatus.ONGOING;
+      await this.orderRepository.save(rides.order);
+
+      await this.notificationsService.create({
+        message: `${rides.milestone} milestone reached for this order ${rides.order.orderID}`,
+        subject: 'MileStone Reached',
+        account: rider.riderID,
+      });
+
+      return this.responseService.success(
+        'milestone reached and checkpoint status updated successfully',
+        savedRide,
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error updating milestone',
+      );
+    }
+  }
+
+  //drops off event
+  async dropOffParcel(
+    rider: RiderEntity,
+    ridesID: string,
+    dto: DropOffCodeDto,
+  ): Promise<StandardResponse<Rides>> {
+    try {
+      const rides = await this.ridesRepo.findByID(ridesID);
+      if (!rides) return this.responseService.notFound('ride not found');
+
+      let order = rides.order;
+
+      if (dto.dropOff_code! == order.dropoffCode)
+        return this.responseService.notFound('drop off code not a match');
+
+      for (const itemsID of dto.itemsDroppedOff) {
+        const itemToUpdate = order.items.find((item) => item.id === itemsID);
+        if (!itemToUpdate)
+          return this.responseService.notFound(
+            `item with id ${itemsID} not found in this order`,
+          );
+
+        if (itemToUpdate.isDroppedOff)
+          return this.responseService.badRequest('item dropped off already');
+
+        //update the item
+        itemToUpdate.isDroppedOff = true;
+        itemToUpdate.droppedOffAT = new Date();
+
+        await this.orderItemRepo.save(itemToUpdate);
+      }
+
+      //update ride and order status
+
+      rides.milestone = RiderMileStones.DROPPED_OFF_PARCEL;
+      rides.dropped_off_parcelAT = new Date();
+
+      //remaining items
+      const remainingitems = order.items.filter(
+        (item) => !item.isDroppedOff,
+      ).length;
+      const allItemsDroppedOff = remainingitems === 0;
+
+      if (allItemsDroppedOff) {
+        rides.status = RideStatus.CONCLUDED;
+
+        order.orderStatus = OrderStatus.COMPLETED;
+        rider.RiderStatus = RiderStatus.AVAILABLE;
+        await this.riderRepository.save(rider);
+      } else {
+        rides.status = RideStatus.ONGOING;
+        order.orderStatus = OrderStatus.ONGOING;
+      }
+
+      rides.checkpointStatus = {
+        ...rides.checkpointStatus,
+        'dropped_off-parcel': true,
+      };
+
+      await this.ridesRepo.save(rides);
+      await this.orderRepository.save(order);
+
+      const savedRide = await this.ridesRepo.findByID(rides.ridesID);
+
+      await this.notificationsService.create({
+        message: `${rides.milestone} milestone reached for this order ${rides.order.orderID}`,
+        subject: 'MileStone Reached',
+        account: rider.riderID,
+      });
+
+      return this.responseService.success(
+        'milestone reached and checkpoint status updated successfully',
+        savedRide,
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error dropping off a parcel',
         error.message,
       );
     }

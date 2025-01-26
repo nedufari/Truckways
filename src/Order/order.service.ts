@@ -17,11 +17,13 @@ import { GeoLocationService } from 'src/utils/services/geolocation.service';
 import { CartItem } from './Domain/order-cart-items';
 import { CustomerEntity } from 'src/Customer/Infrastructure/Persistence/Relational/Entity/customer.entity';
 import { Order } from './Domain/order';
-import { BidStatus } from 'src/Enums/order.enum';
+import { BidStatus, OrderStatus } from 'src/Enums/order.enum';
 import { Injectable } from '@nestjs/common';
 import { PaystackCustomer } from 'src/Payment/paystack/paystack-standard-response';
 import { PaystackService } from 'src/Payment/paystack/paystack.service';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
+import { PercentageConfigRepository } from 'src/Admin/Infrastructure/Persistence/admin-repository';
+import { PercentageType } from 'src/Enums/percentage.enum';
 //import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 
 @Injectable()
@@ -32,6 +34,7 @@ export class OrderService {
     private orderItemRepository: OrderItemRepository,
     private cartItemRepositor: CartItemRepository,
     private bidRepository: BidRepository,
+    private percentageRepository: PercentageConfigRepository,
     private responseService: ResponseService,
     private notificationService: NotificationsService,
     private generatorService: GeneratorService,
@@ -39,6 +42,7 @@ export class OrderService {
     private geolocationService: GeoLocationService,
     private paystackService: PaystackService,
     private readonly eventsGateway: EventsGateway,
+
     //private readonly pushnotificationsService:PushNotificationsService
   ) {}
 
@@ -173,6 +177,8 @@ export class OrderService {
         return this.responseService.badRequest('cart is already checked out');
 
       const orderID = `TrkO${await this.generatorService.generateUserID()}`;
+      const trackingID = `TrkT${await this.generatorService.generateTrackingID()}`;
+      const dropoffCode = await this.generatorService.generateDropOffCode();
 
       //create order
       const order = await this.orderRepository.create({
@@ -180,10 +186,14 @@ export class OrderService {
         orderID: orderID,
         accepted_bid: 0,
         bid: [],
+        trackingID: trackingID,
+        dropoffCode: dropoffCode,
+        orderStatus: OrderStatus.PENDING,
         Rider: undefined,
         customer: customer,
-        createdAT:new Date(),
-        paymentStatus:undefined,
+        createdAT: new Date(),
+        paymentStatus: undefined,
+        ride: undefined,
         items: [], //will update after creating the items
       });
       console.log('order', order);
@@ -209,7 +219,9 @@ export class OrderService {
             load_type: item.load_type,
             load_value: item.load_value,
             truck_type: item.truck_type,
-            order: savedOrder, // Link to the saved order
+            order: savedOrder,
+            droppedOffAT: undefined,
+            isDroppedOff: false,
           });
 
           return await this.orderItemRepository.save(orderItem);
@@ -240,8 +252,8 @@ export class OrderService {
 
           const savedBid = await this.bidRepository.save(initialBid);
 
-           // Emit WebSocket event for new order with initial bid
-           this.eventsGateway.emitToAllRiders('newOrder', {
+          // Emit WebSocket event for new order with initial bid
+          this.eventsGateway.emitToAllRiders('newOrder', {
             orderId: savedOrder.orderID,
             pickup: orderItem.pickup_address,
             dropoff: orderItem.dropoff_address,
@@ -250,15 +262,13 @@ export class OrderService {
               loadType: orderItem.load_type,
               truckType: orderItem.truck_type,
               loadValue: orderItem.load_value,
-            }
+            },
           });
 
-
-          //push notifications 
+          //push notifications
           //this.pushnotificationsService.notifyAllRidersOfNewOrder(savedOrder)
 
-
-          return savedBid
+          return savedBid;
         }),
       );
 
@@ -274,8 +284,6 @@ export class OrderService {
         subject: 'Order Placed',
         account: customer.customerID,
       });
-
-     
 
       //fetch completed order
       const completedOrder = await this.orderRepository.findByID(
@@ -310,6 +318,20 @@ export class OrderService {
           'The bid for this order has not being finalized yet, so you cannot proceed with payment',
         );
 
+      //retrieve insurance remittance amount
+      const insuranceconfig = await this.percentageRepository.findByType(
+        PercentageType.INSURANCE_REMITTANCE,
+      );
+      if (!insuranceconfig)
+        return this.responseService.notFound('insurance percentage not found');
+
+      // Calculate insurance remittance amount
+      const acceptedBidAmount = Number(order.accepted_bid);
+      const insuranceRemittancePercentage = insuranceconfig.percentage / 100;
+      const insuranceRemittanceAmount =
+        acceptedBidAmount * insuranceRemittancePercentage;
+      const totalPaymentAmount = acceptedBidAmount + insuranceRemittanceAmount;
+
       //initialize payment
       const PaystackCustomer: PaystackCustomer = {
         email: customer.email,
@@ -318,11 +340,11 @@ export class OrderService {
       };
 
       const paymentResponse = await this.paystackService.PayForOrder(
-        Number(order.accepted_bid),
+        Number(totalPaymentAmount),
         PaystackCustomer,
         order,
       );
-      console.log (order.accepted_bid)
+      console.log(order.accepted_bid);
 
       if (paymentResponse) {
         await this.notificationService.create({

@@ -1,5 +1,7 @@
 import { Admin } from "src/Admin/Domain/admin";
+import { PercentageConfig } from "src/Admin/Domain/percentage";
 import { Customer } from "src/Customer/Domain/customer";
+import { PercentageType } from "src/Enums/percentage.enum";
 import { PaginationDto, SearchDto } from "src/utils/shared-dto/pagination.dto";
 
 export abstract class AdminRepository{
@@ -13,4 +15,16 @@ export abstract class AdminRepository{
     abstract profile (admin:Admin):Promise<Admin>
     abstract save (admin:Admin):Promise<Admin>
     abstract searchAdmin (searchdto:SearchDto):Promise<{data:Admin[], total:number}>
+}
+
+
+export abstract class PercentageConfigRepository{
+    abstract create(percent:PercentageConfig):Promise<PercentageConfig>
+    abstract findByID(id:number):Promise<PercentageConfig | null>
+    abstract find(dto:PaginationDto):Promise<{data:PercentageConfig[], total:number}>
+    abstract findByType(type:PercentageType):Promise<PercentageConfig | null>
+    abstract update (id:number , admin:Partial<PercentageConfig>):Promise<PercentageConfig>
+    abstract remove (id:string):Promise<void>
+    abstract save (admin:PercentageConfig):Promise<PercentageConfig>
+    
 }

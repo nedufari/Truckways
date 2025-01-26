@@ -1,6 +1,7 @@
 import { Customer } from "src/Customer/Domain/customer";
 import { Bank } from "src/Rider/Domain/bank";
 import { Rider } from "src/Rider/Domain/rider";
+import { Rides } from "src/Rider/Domain/rides";
 import { Transactions } from "src/Rider/Domain/transaction";
 import { Vehicle } from "src/Rider/Domain/vehicle";
 import { Wallet } from "src/Rider/Domain/wallet";
@@ -55,4 +56,14 @@ export abstract class TransactionRepository{
     abstract find(dto:PaginationDto):Promise<{data:Transactions[], total:number}>
     abstract save (transaction:Transactions):Promise<Transactions>
     abstract searchTransactions (searchdto:SearchDto):Promise<{data:Transactions[], total:number}>
+}
+
+
+export abstract class RidesRepository{
+    abstract create(ride:Rides):Promise<Rides>
+    abstract findByID(string:string):Promise<Rides | null>
+    abstract find(dto:PaginationDto):Promise<{data:Rides[], total:number}>
+    abstract save (ride:Rides):Promise<Rides>
+    abstract searchRides (searchdto:SearchDto):Promise<{data:Rides[], total:number}>
+    abstract update (id:number , rides:Partial<Rides>):Promise<Rides>
 }
