@@ -536,7 +536,7 @@ export class RiderService {
           ridesID: ridesID,
           milestone: undefined,
           status: RideStatus.PENDING,
-          rider: order.Rider,
+          rider: rider,
           order: order,
           checkpointStatus: undefined,
           at_dropoff_locationAT: undefined,
@@ -774,11 +774,11 @@ export class RiderService {
       const rides = await this.ridesRepo.findByID(ridesID);
       if (!rides) return this.responseService.notFound('ride not found');
 
-      if (rides.order.paymentStatus !== PaymentStatus.SUCCESFUL) {
-        return this.responseService.badRequest(
-          'Payment has not been confirmed yet, so you cannot start this ride',
-        );
-      }
+      // if (rides.order.paymentStatus !== PaymentStatus.SUCCESFUL) {
+      //   return this.responseService.badRequest(
+      //     'Payment has not been confirmed yet, so you cannot start this ride',
+      //   );
+      // }
 
       rides.milestone = RiderMileStones.ENROUTE_TO_PICKUP_LOCATION;
       rides.enroute_to_pickup_locationAT = new Date();
@@ -821,7 +821,7 @@ export class RiderService {
       if (!rides) return this.responseService.notFound('ride not found');
 
       rides.milestone = RiderMileStones.AT_PICKUP_LOCATION;
-      rides.enroute_to_dropoff_locationAT = new Date();
+      rides.at_pickup_locationAT = new Date();
       rides.checkpointStatus = {
         ...rides.checkpointStatus,
         at_pickup_location: true,
@@ -861,7 +861,7 @@ export class RiderService {
       if (!rides) return this.responseService.notFound('ride not found');
 
       rides.milestone = RiderMileStones.PICKED_UP_PARCEL;
-      rides.enroute_to_dropoff_locationAT = new Date();
+      rides.picked_up_parcelAT = new Date();
       rides.checkpointStatus = {
         ...rides.checkpointStatus,
         picked_up_parcel: true,
@@ -941,7 +941,7 @@ export class RiderService {
       if (!rides) return this.responseService.notFound('ride not found');
 
       rides.milestone = RiderMileStones.AT_DROPOFF_LOCATION;
-      rides.enroute_to_dropoff_locationAT = new Date();
+      rides.at_dropoff_locationAT = new Date();
       rides.checkpointStatus = {
         ...rides.checkpointStatus,
         at_dropoff_location: true,
@@ -983,8 +983,9 @@ export class RiderService {
       if (!rides) return this.responseService.notFound('ride not found');
 
       let order = rides.order;
+      console.log(order)
 
-      if (dto.dropOff_code! == order.dropoffCode)
+      if (dto.dropOff_code !== order.dropoffCode)
         return this.responseService.notFound('drop off code not a match');
 
       for (const itemsID of dto.itemsDroppedOff) {
@@ -1005,7 +1006,6 @@ export class RiderService {
       }
 
       //update ride and order status
-
       rides.milestone = RiderMileStones.DROPPED_OFF_PARCEL;
       rides.dropped_off_parcelAT = new Date();
 

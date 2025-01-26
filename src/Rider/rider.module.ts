@@ -19,11 +19,13 @@ import { WalletRepository } from './Infrastructure/Persistence/rider-repository'
 import { WalletController } from './wallet/wallet.controller';
 import { PaystackService } from 'src/Payment/paystack/paystack.service';
 import { CustomAxiosService } from 'src/Payment/paystack/custom.axios-service';
+import { RelationalPersistenceAdminModule } from 'src/Admin/Infrastructure/Persistence/Relational/relational-persistence-admin.module';
 
 @Module({
   imports: [
     RelationalPersistenceRiderModule,
     PersitenceRelationalOrderModule,
+    RelationalPersistenceAdminModule,
     TypeOrmModule.forFeature([NotificationsEntity,RiderEntity]),
   ],
   providers: [

@@ -36,7 +36,7 @@ export class OrderRelationalRepository implements OrderRepository {
   async findByID(id: string): Promise<Order> {
     const order = await this.orderEntityRepository.findOne({
       where: { orderID: id },
-      relations: ['customer', 'bid', 'items'],
+      relations: ['customer', 'bid', 'items','Rider'],
     });
     return order ? OrderMapper.toDomain(order) : null;
   }

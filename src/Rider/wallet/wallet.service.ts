@@ -16,16 +16,21 @@ import { CashoutDto } from './dto/cashout.dto';
 import { PaystackCustomer } from 'src/Payment/paystack/paystack-standard-response';
 import { PaystackService } from 'src/Payment/paystack/paystack.service';
 import { Transactions } from 'src/Rider/Domain/transaction';
+import { PercentageConfigRepository } from 'src/Admin/Infrastructure/Persistence/admin-repository';
+import { PercentageType } from 'src/Enums/percentage.enum';
+import { GeneratorService } from 'src/utils/services/generator.service';
 
 @Injectable()
 export class WalletService {
   constructor(
     private readonly walletRepository: WalletRepository,
     private readonly RiderRepository: RiderRepository,
+    private readonly percentageRepository:PercentageConfigRepository,
     private transactionRepository: TransactionRepository,
     private responseService: ResponseService,
     private notificationsService: NotificationsService,
     private paystackService: PaystackService,
+    private generatorService:GeneratorService,
   ) {}
 
   //fund wallet
@@ -39,12 +44,15 @@ export class WalletService {
       const wallet = await this.walletRepository.findByRiderID(Rider.riderID);
       if (!wallet) return this.responseService.notFound('Wallet not found');
 
-      const transferAmount = orderAmount * 0.3;
+      const percentage = await this.percentageRepository.findByType(PercentageType.RIDER_INITIAL_REMITTANCE)
+      if (!percentage) return this.responseService.notFound('initial rider percenatge remitance not found')
+      const transferAmount = orderAmount * percentage.percentage;
 
       //transaction
+      const transactionID = `TrkT${await this.generatorService.generateUserID()}`;
       const transaction = await this.transactionRepository.create({
         id: 0,
-        transactionID: '',
+        transactionID: transactionID,
         amount: transferAmount,
         type: TransactionType.CREDIT,
         status: TransactionStatus.PENDING,
@@ -75,8 +83,6 @@ export class WalletService {
     }
   }
 
-  // withdraw from wallet
-  // the rider can then withdraw this to an accepable bank , perharps the one he saved in his profile , somthe money can be withdrawn there and we will achieve this with paystack
 
 
 
@@ -160,9 +166,10 @@ export class WalletService {
       }
 
       //transaction
+      const transactionID = `TrkT${await this.generatorService.generateUserID()}`;
       const transaction = await this.transactionRepository.create({
         id: 0,
-        transactionID: '',
+        transactionID: transactionID,
         amount: dto.amount,
         type: TransactionType.DEBIT,
         status: TransactionStatus.PENDING,

@@ -464,6 +464,7 @@ export class TransactionRelationalRepository implements TransactionRepository {
     async findByID(id: string): Promise<Rides> {
       const wallet = await this.ridesEntityRepository.findOne({
         where: { ridesID: id },
+        relations: ['rider','order','order.items'],
       });
       return wallet ? RidesMapper.toDomain(wallet) : null;
     }
@@ -479,7 +480,7 @@ export class TransactionRelationalRepository implements TransactionRepository {
           skip: (page - 1) * limit,
           take: limit,
           order: { [sortBy]: sortOrder },
-          relations: ['rider','order'],
+          relations: ['rider','order','order.items'],
         },
       );
       const wallets = result.map(RidesMapper.toDomain);

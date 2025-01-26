@@ -11,10 +11,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { NotificationsEntity } from '../shared-entities/notification.entity';
 import { GeneratorService } from '../services/generator.service';
 import { JwtService } from '@nestjs/jwt';
+import { RelationalPersistenceAdminModule } from 'src/Admin/Infrastructure/Persistence/Relational/relational-persistence-admin.module';
 
 @Module({
   imports: [
     RelationalPersistenceRiderModule,
+    RelationalPersistenceAdminModule,
     ConfigModule.forRoot(),
     TypeOrmModule.forFeature([NotificationsEntity]),
   ],
