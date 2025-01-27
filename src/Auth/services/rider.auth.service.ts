@@ -13,7 +13,7 @@ import { VerifyOtp } from '../dto/verify-otp.dto';
 import { ResendExpiredOtp } from '../dto/resend-expired-otp.dto';
 import { RequestPasswordResetOtp } from '../dto/password-reset-dto';
 import { ResetPasswordDto } from '../dto/reset-password-otp.dto';
-import { LoginDto } from '../dto/login.dto'; 
+import { LoginDto } from '../dto/login.dto';
 import { SignupDto } from '../dto/signup.dto';
 import { Role } from 'src/Enums/users.enum';
 import { VerifficationType } from 'src/Enums/verification.enum';
@@ -87,6 +87,7 @@ export class RiderAuthService {
 
       //create and save otp
       const otpCode = await this.generatorService.generateEmailToken();
+      console.log(otpCode)
       let now = new Date();
 
       const twominutelater = new Date(now.getTime() + 120000);
@@ -102,43 +103,43 @@ export class RiderAuthService {
         }),
       );
       //send email first before saving the user incase of any problem
-      await this.mailService.VerifyOtpMail(email, otpCode);
+     await this.mailService.VerifyOtpMail(email, otpCode);
 
       const user = await this.riderRepository.create({
-          email:email,
-          name:name,
-          phoneNumber: undefined,
-          password: hashpassword,
-          riderID: riderIdcustom,
-          id: 0,
-          deviceToken:undefined,
-          profilePicture: '',
-          role: Role.RIDER,
-          createdAT: new Date(),
-          updatedAT: undefined,
-          emailConfirmed: false,
-          isAprroved: false,
-          isBlocked: false,
-          resetPasswordToken: '',
-          resetPasswordTokenExpTime: undefined,
-          driversLicenceBack: undefined,
-          driversLicenceFront: undefined,
-          address: {
-              address: '',
-              lat: 0,
-              lon: 0,
-          },
-          my_wallet: undefined,
-          city: '',
-          state: '',
-          companyRegNum: '',
-          RiderStatus:undefined,
-          vehicle: undefined,
-          bank_details: undefined,
-          accepted_orders: [],
-          accepted_bids:[],
-          my_transactions:[],
-          rides:[]
+        email: email,
+        name: name,
+        phoneNumber: undefined,
+        password: hashpassword,
+        riderID: riderIdcustom,
+        id: 0,
+        deviceToken: undefined,
+        profilePicture: '',
+        role: Role.RIDER,
+        createdAT: new Date(),
+        updatedAT: undefined,
+        emailConfirmed: false,
+        isAprroved: false,
+        isBlocked: false,
+        resetPasswordToken: '',
+        resetPasswordTokenExpTime: undefined,
+        driversLicenceBack: undefined,
+        driversLicenceFront: undefined,
+        address: {
+          address: '',
+          lat: 0,
+          lon: 0,
+        },
+        my_wallet: undefined,
+        city: '',
+        state: '',
+        companyRegNum: '',
+        RiderStatus: undefined,
+        vehicle: undefined,
+        bank_details: undefined,
+        accepted_orders: [],
+        accepted_bids: [],
+        my_transactions: [],
+        rides: [],
       });
 
       //save notification
@@ -200,10 +201,7 @@ export class RiderAuthService {
         account: rider.riderID,
       });
 
-      return this.responseService.success(
-        'email verified successfully',
-        rider,
-      );
+      return this.responseService.success('email verified successfully', rider);
     } catch (error) {
       return this.responseService.internalServerError(
         'Error verifying email',
@@ -306,8 +304,9 @@ export class RiderAuthService {
     dto: VerifyOtp,
   ): Promise<StandardResponse<boolean>> {
     try {
-      const findresetOtp =
-        await this.riderRepository.findbyPasswordResetToken(dto.otp);
+      const findresetOtp = await this.riderRepository.findbyPasswordResetToken(
+        dto.otp,
+      );
       if (!findresetOtp)
         return this.responseService.notFound(
           'reset password token not a match',
@@ -388,6 +387,16 @@ export class RiderAuthService {
 
       if (!customer.emailConfirmed)
         return this.responseService.badRequest('user is not verified yet');
+
+      if (!customer.isAprroved)
+        return this.responseService.badRequest(
+          'oops! sorry you cannot login yet, you are yet to be approved by the Truckways Mgt, please try this again when you get an approval email. Thanks',
+        );
+
+      if (customer.isBlocked)
+        return this.responseService.badRequest(
+          'you are blocked and barred from logging into your accout, please file a complaint via our email. Thanks ',
+        );
 
       await this.notificationService.create({
         message: `Hi ${customer.name}, logged in successfully.`,

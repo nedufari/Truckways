@@ -62,7 +62,9 @@ export abstract class TransactionRepository{
 export abstract class RidesRepository{
     abstract create(ride:Rides):Promise<Rides>
     abstract findByID(string:string):Promise<Rides | null>
+    abstract findByIDRelatedtoRider(string:string, riderId:string):Promise<Rides | null>
     abstract find(dto:PaginationDto):Promise<{data:Rides[], total:number}>
+    abstract findAllRelatedToARider(dto:PaginationDto, riderId:string):Promise<{data:Rides[], total:number}>
     abstract save (ride:Rides):Promise<Rides>
     abstract searchRides (searchdto:SearchDto):Promise<{data:Rides[], total:number}>
     abstract update (id:number , rides:Partial<Rides>):Promise<Rides>

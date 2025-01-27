@@ -11,5 +11,5 @@ export class DropOffCodeDto {
     @IsArray() // Validate as an array
     @IsInt({ each: true }) // Ensure each item in the array is an integer
     @Min(1, { each: true }) // Each integer must be greater than or equal to 1
-    itemsDroppedOff: number[];
+    itemsDroppedOff: string[];
   }

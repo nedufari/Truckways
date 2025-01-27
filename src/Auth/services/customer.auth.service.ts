@@ -89,6 +89,7 @@ export class CustomerAuthService {
 
       //create and save otp
       const otpCode = await this.generatorService.generateEmailToken();
+      console.log(otpCode)
       let now = new Date();
 
       const twominutelater = new Date(now.getTime() + 120000);

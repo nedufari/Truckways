@@ -24,6 +24,7 @@ export class RidesMapper{
     domainEntity.rider = raw.rider;
     domainEntity.order = raw.order;
     domainEntity.ridesID = raw.ridesID;
+    domainEntity.createdAT = raw.createdAT;
  
 
     return domainEntity;
@@ -49,6 +50,7 @@ export class RidesMapper{
     persistenceEntity.rider = domainEntity.rider;
     persistenceEntity.milestone = domainEntity.milestone;
     persistenceEntity.ridesID = domainEntity.ridesID;
+    persistenceEntity.createdAT = domainEntity.createdAT;
     
    
     return persistenceEntity;

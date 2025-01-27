@@ -74,4 +74,8 @@ export class Rides {
 
   @ApiProperty({ type: () => OrderEntity })
   order: OrderEntity;
+
+  @ApiProperty()
+  @IsDate()
+  createdAT: Date;
 }

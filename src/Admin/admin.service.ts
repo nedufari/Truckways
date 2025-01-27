@@ -38,6 +38,7 @@ import { Customer } from 'src/Customer/Domain/customer';
 import { CustomerRepository } from 'src/Customer/Infrastructure/Persistence/customer-repository';
 import {
   RiderRepository,
+  RidesRepository,
   TransactionRepository,
   VehicleRepository,
   WalletRepository,
@@ -51,6 +52,7 @@ import {
   UpdatePercentageDto,
 } from './Dto/percentage-config.dto';
 import { PercentageConfig } from './Domain/percentage';
+import { Rides } from 'src/Rider/Domain/rides';
 
 //import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
@@ -70,6 +72,7 @@ export class AdminService {
     private bidRepository: BidRepository,
     private walletRipo: WalletRepository,
     private percentageRepo: PercentageConfigRepository,
+    private ridesRepository:RidesRepository,
     private genefratorService: GeneratorService,
     private readonly eventsGateway: EventsGateway,
 
@@ -576,6 +579,52 @@ export class AdminService {
     }
   }
 
+
+  async FetchAllrides(
+    dto: PaginationDto,
+  ): Promise<StandardResponse<{ data: Rides[]; total: number }>> {
+    try {
+      const { data: rides, total } = await this.ridesRepository.find(dto);
+
+      return this.responseService.success(
+        rides.length
+          ? 'Rides retrived successfully'
+          : 'No rides yet',
+        {
+          data: rides,
+          total,
+          currentPage: dto.page,
+          pageSize: dto.limit,
+        },
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error fetching rides',
+        error.message,
+      );
+    }
+  }
+
+  async FetchOneRide(
+    orderID: string,
+  ): Promise<StandardResponse<Rides>> {
+    try {
+      const order = await this.ridesRepository.findByID(orderID);
+      if (!order) return this.responseService.notFound('ride not found');
+
+      return this.responseService.success(
+        'single ride retrieved successfully',
+        order,
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error fetching one ride',
+        error.message,
+      );
+    }
+  }
+
   ////searches
 
   async searchAdmin(
@@ -730,6 +779,33 @@ export class AdminService {
       console.error(error);
       return this.responseService.internalServerError(
         'Error searching for a ticket',
+      );
+    }
+  }
+
+
+  async searchRides(
+    searchDto: SearchDto,
+  ): Promise<StandardResponse<{ data: Rides[]; total: number }>> {
+    try {
+      const { data: rides, total } =
+        await this.ridesRepository.searchRides(searchDto);
+
+      if (!rides.length)
+        return this.responseService.notFound(
+          `no search result found for the keyword: ${searchDto.keyword}`,
+        );
+
+      return this.responseService.success('search result found', {
+        data: rides,
+        total,
+        currentPage: searchDto.page,
+        pageSize: searchDto.Perpage,
+      });
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error searching for a ride',
       );
     }
   }

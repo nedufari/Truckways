@@ -446,7 +446,7 @@ export class CustomerService {
            ridesID:ridesID,
            milestone: undefined,
            status: RideStatus.PENDING,
-           rider: order.Rider,
+           rider: bid.rider,
            order: order,
            checkpointStatus: undefined,
            at_dropoff_locationAT: undefined,
@@ -457,7 +457,8 @@ export class CustomerService {
            reason_for_cancelling_ride: '',
            isCancelled: false,
            cancelledAt: undefined,
-           picked_up_parcelAT: undefined
+           picked_up_parcelAT: undefined,
+           createdAT:  new Date()
          })
  
 

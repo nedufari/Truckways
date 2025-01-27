@@ -47,6 +47,7 @@ import { Transactions } from 'src/Rider/Domain/transaction';
 import { AppproveRiderDto, BlockRiderDto } from './Dto/approve-rider.dto';
 import { CreatePercentageDto, UpdatePercentageDto } from './Dto/percentage-config.dto';
 import { PercentageConfig } from './Domain/percentage';
+import { Rides } from 'src/Rider/Domain/rides';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -680,6 +681,81 @@ export class AdminController {
     return await this.adminService.FetchAllTransactions(dto);
   }
 
+
+
+  @Get('one-ride/:rideID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Rides>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Rides),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'fetch one ride' })
+  async FetchOneRide(
+    @Param('rideID') orderId: string,
+  ): Promise<StandardResponse<Rides>> {
+    return await this.adminService.FetchOneRide(orderId);
+  }
+
+  @Get('all-rides')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(
+            StandardResponse<{ data: Rides[]; total: number }>,
+          ),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Rides),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: 'number',
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: 'number',
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: 'string',
+    description: 'Sorting field',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sorting order',
+  })
+  @ApiOperation({ summary: 'all rides' })
+  async fetchAllRides(
+    @Query() dto: PaginationDto,
+    @Req() req,
+  ): Promise<StandardResponse<{ data: Rides[]; total: number }>> {
+    return await this.adminService.FetchAllrides(dto);
+  }
+
   ///searches and queries
   @Get('search-admin')
   @ApiOkResponse({
@@ -997,6 +1073,61 @@ export class AdminController {
     return await this.adminService.searchBid(dto);
   }
 
+  @Get('search-ride')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(StandardResponse<{ data: Rides[]; total: number }>),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Rides),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'search for a ride, rideID',
+  })
+  @ApiQuery({ name: 'keyword', required: false, description: 'Search keyword' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: 'number',
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'perPage',
+    required: false,
+    type: 'number',
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    type: 'string',
+    description: 'Sorting field',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sorting order',
+  })
+  async searchRide(
+    @Query() dto: SearchDto,
+  ): Promise<StandardResponse<{ data: Rides[]; total: number }>> {
+    return await this.adminService.searchRides(dto);
+  }
+
+
+
+
+  //approve and block 
   @Patch('approve-rider/:riderID')
   @ApiOkResponse({
     schema: {

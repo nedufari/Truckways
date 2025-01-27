@@ -717,4 +717,79 @@ export class RiderController {
   ): Promise<StandardResponse<Rides>> {
     return await this.riderService.dropOffParcel(req.user, rideID, dto);
   }
+
+
+  @Get('one-ride/:rideID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Rides>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Rides),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'fetch one ride' })
+  async FetchOneRide(
+    @Req()req,
+    @Param('rideID') orderId: string,
+  ): Promise<StandardResponse<Rides>> {
+    return await this.riderService.FetchOneRide(req.user,orderId);
+  }
+
+  @Get('all-rides')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(
+            StandardResponse<{ data: Rides[]; total: number }>,
+          ),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Rides),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: 'number',
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: 'number',
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: 'string',
+    description: 'Sorting field',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sorting order',
+  })
+  @ApiOperation({ summary: 'all rides' })
+  async fetchAllRides(
+    @Query() dto: PaginationDto,
+    @Req() req,
+  ): Promise<StandardResponse<{ data: Rides[]; total: number }>> {
+    return await this.riderService.FetchAllrides(req.user,dto);
+  }
 }

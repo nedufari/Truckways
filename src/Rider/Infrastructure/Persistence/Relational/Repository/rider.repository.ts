@@ -468,6 +468,14 @@ export class TransactionRelationalRepository implements TransactionRepository {
       });
       return wallet ? RidesMapper.toDomain(wallet) : null;
     }
+
+    async findByIDRelatedtoRider(id: string, riderId:string): Promise<Rides> {
+      const wallet = await this.ridesEntityRepository.findOne({
+        where: { ridesID: id , rider:{riderID:riderId}},
+        relations: ['rider','order','order.items'],
+      });
+      return wallet ? RidesMapper.toDomain(wallet) : null;
+    }
   
   
   
@@ -496,6 +504,28 @@ export class TransactionRelationalRepository implements TransactionRepository {
   
       return RidesMapper.toDomain(savedWallet);
     }
+
+
+
+    async findAllRelatedToARider(
+      dto: PaginationDto,
+      riderId:string
+    ): Promise<{ data: Rides[]; total: number }> {
+      const { page, limit, sortBy, sortOrder } = dto;
+      const [result, total] = await this.ridesEntityRepository.findAndCount(
+        {
+          where:{rider:{riderID:riderId}},
+          skip: (page - 1) * limit,
+          take: limit,
+          order: { [sortBy]: sortOrder },
+          relations: ['rider','order','order.items'],
+        },
+      );
+      const wallets = result.map(RidesMapper.toDomain);
+      return { data: wallets, total };
+    }
+  
+
   
   
     async searchRides(

@@ -548,6 +548,7 @@ export class RiderService {
           isCancelled: false,
           cancelledAt: undefined,
           picked_up_parcelAT: undefined,
+          createdAT:new Date()
         });
 
         // Emit WebSocket event for accepting initial bid
@@ -972,52 +973,140 @@ export class RiderService {
     }
   }
 
-  //drops off event
+  // //drops off event
+  // async dropOffParcel(
+  //   rider: RiderEntity,
+  //   ridesID: string,
+  //   dto: DropOffCodeDto,
+  // ): Promise<StandardResponse<Rides>> {
+  //   try {
+  //     const rides = await this.ridesRepo.findByID(ridesID);
+  //     if (!rides) return this.responseService.notFound('ride not found');
+
+  //     if (!rides.order) return this.responseService.notFound('associated order not found')
+
+  //     let order = rides.order;
+  //     console.log(order)
+
+  //     if (dto.dropOff_code !== order.dropoffCode)
+  //       return this.responseService.notFound('drop off code not a match');
+
+  //     for (const itemsID of dto.itemsDroppedOff) {
+  //       const itemToUpdate = order.items.find((item) => item.id === itemsID);
+  //       if (!itemToUpdate)
+  //         return this.responseService.notFound(
+  //           `item with id ${itemsID} not found in this order`,
+  //         );
+
+  //       if (itemToUpdate.isDroppedOff)
+  //         return this.responseService.badRequest('item dropped off already');
+
+  //       //update the item
+  //       itemToUpdate.isDroppedOff = true;
+  //       itemToUpdate.droppedOffAT = new Date();
+
+  //       await this.orderItemRepo.save(itemToUpdate);
+  //     }
+
+  //     //update ride and order status
+  //     rides.milestone = RiderMileStones.DROPPED_OFF_PARCEL;
+  //     rides.dropped_off_parcelAT = new Date();
+
+  //     //remaining items
+  //     const remainingitems = order.items.filter(
+  //       (item) => !item.isDroppedOff,
+  //     ).length;
+  //     const allItemsDroppedOff = remainingitems === 0;
+
+  //     if (allItemsDroppedOff) {
+  //       rides.status = RideStatus.CONCLUDED;
+
+  //       order.orderStatus = OrderStatus.COMPLETED;
+  //       rider.RiderStatus = RiderStatus.AVAILABLE;
+  //       await this.riderRepository.save(rider);
+  //     } else {
+  //       rides.status = RideStatus.ONGOING;
+  //       order.orderStatus = OrderStatus.ONGOING;
+  //     }
+
+  //     rides.checkpointStatus = {
+  //       ...rides.checkpointStatus,
+  //       'dropped_off-parcel': true,
+  //     };
+
+  //     await this.ridesRepo.save(rides);
+  //     await this.orderRepository.save(order);
+
+  //     const savedRide = await this.ridesRepo.findByID(rides.ridesID);
+
+  //     await this.notificationsService.create({
+  //       message: `${rides.milestone} milestone reached for this order ${rides.order.orderID}`,
+  //       subject: 'MileStone Reached',
+  //       account: rider.riderID,
+  //     });
+
+  //     return this.responseService.success(
+  //       'milestone reached and checkpoint status updated successfully',
+  //       savedRide,
+  //     );
+  //   } catch (error) {
+  //     console.error(error);
+  //     return this.responseService.internalServerError(
+  //       'Error dropping off a parcel',
+  //       error.message,
+  //     );
+  //   }
+  // }
+
   async dropOffParcel(
     rider: RiderEntity,
     ridesID: string,
     dto: DropOffCodeDto,
   ): Promise<StandardResponse<Rides>> {
     try {
+      // Fetch and validate ride
       const rides = await this.ridesRepo.findByID(ridesID);
-      if (!rides) return this.responseService.notFound('ride not found');
+      if (!rides) return this.responseService.notFound('Ride not found');
+      if (!rides.order)
+        return this.responseService.notFound('Associated order not found');
 
-      let order = rides.order;
-      console.log(order)
+      const order = rides.order;
 
+      // Validate drop-off code
       if (dto.dropOff_code !== order.dropoffCode)
-        return this.responseService.notFound('drop off code not a match');
+        return this.responseService.badRequest('Drop-off code mismatch');
 
+      // Handle items
+      const invalidItems: string[] = [];
       for (const itemsID of dto.itemsDroppedOff) {
-        const itemToUpdate = order.items.find((item) => item.id === itemsID);
-        if (!itemToUpdate)
-          return this.responseService.notFound(
-            `item with id ${itemsID} not found in this order`,
+        const item = order.items.find((i) => i.orderItemID === itemsID);
+        if (!item) invalidItems.push(itemsID);
+        else if (item.isDroppedOff) {
+          return this.responseService.badRequest(
+            `Item ${itemsID} already dropped off`,
           );
-
-        if (itemToUpdate.isDroppedOff)
-          return this.responseService.badRequest('item dropped off already');
-
-        //update the item
-        itemToUpdate.isDroppedOff = true;
-        itemToUpdate.droppedOffAT = new Date();
-
-        await this.orderItemRepo.save(itemToUpdate);
+        } else {
+          item.isDroppedOff = true;
+          item.droppedOffAT = new Date();
+          await this.orderItemRepo.save(item);
+        }
       }
 
-      //update ride and order status
+      if (invalidItems.length) {
+        return this.responseService.notFound(
+          `Invalid items: ${invalidItems.join(', ')}`,
+        );
+      }
+
+      // Update ride and order statuses
       rides.milestone = RiderMileStones.DROPPED_OFF_PARCEL;
       rides.dropped_off_parcelAT = new Date();
 
-      //remaining items
-      const remainingitems = order.items.filter(
+      const remainingItems = order.items.filter(
         (item) => !item.isDroppedOff,
       ).length;
-      const allItemsDroppedOff = remainingitems === 0;
-
-      if (allItemsDroppedOff) {
+      if (remainingItems === 0) {
         rides.status = RideStatus.CONCLUDED;
-
         order.orderStatus = OrderStatus.COMPLETED;
         rider.RiderStatus = RiderStatus.AVAILABLE;
         await this.riderRepository.save(rider);
@@ -1034,22 +1123,74 @@ export class RiderService {
       await this.ridesRepo.save(rides);
       await this.orderRepository.save(order);
 
-      const savedRide = await this.ridesRepo.findByID(rides.ridesID);
-
-      await this.notificationsService.create({
-        message: `${rides.milestone} milestone reached for this order ${rides.order.orderID}`,
-        subject: 'MileStone Reached',
-        account: rider.riderID,
-      });
+      // Notification
+      try {
+        await this.notificationsService.create({
+          message: `${rides.milestone} milestone reached for order ${rides.order.orderID}`,
+          subject: 'Milestone Reached',
+          account: rider.riderID,
+        });
+      } catch (notifError) {
+        console.error('Notification Error:', notifError.message);
+      }
 
       return this.responseService.success(
-        'milestone reached and checkpoint status updated successfully',
-        savedRide,
+        'Milestone reached and checkpoint status updated successfully',
+        rides,
+      );
+    } catch (error) {
+      console.error('Drop-off Error:', error.message);
+      return this.responseService.internalServerError(
+        'Error dropping off a parcel',
+        error.message,
+      );
+    }
+  }
+
+  async FetchAllrides(
+    rider: RiderEntity,
+    dto: PaginationDto,
+  ): Promise<StandardResponse<{ data: Rides[]; total: number }>> {
+    try {
+      const { data: rides, total } =
+        await this.ridesRepo.findAllRelatedToARider(dto, rider.riderID);
+
+      return this.responseService.success(
+        rides.length ? 'Rides retrived successfully' : 'No rides yet',
+        {
+          data: rides,
+          total,
+          currentPage: dto.page,
+          pageSize: dto.limit,
+        },
       );
     } catch (error) {
       console.error(error);
       return this.responseService.internalServerError(
-        'Error dropping off a parcel',
+        'Error fetching rides',
+        error.message,
+      );
+    }
+  }
+
+  async FetchOneRide(
+    rider: RiderEntity,
+    rideID: string,
+  ): Promise<StandardResponse<Rides>> {
+    try {
+      const order = await this.ridesRepo.findByIDRelatedtoRider(
+        rideID,
+        rider.riderID,
+      );
+      if (!order) return this.responseService.notFound('ride not found');
+
+      return this.responseService.success(
+        'single ride retrieved successfully',
+        order,
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error fetching one ride',
         error.message,
       );
     }
