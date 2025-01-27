@@ -144,7 +144,7 @@ export class Rider {
 
   //wallet
   @ApiProperty({ type: () => WalletEntity })
-  my_wallet: BankEntity;
+  my_wallet: WalletEntity;
 
   @ApiProperty({ type: () => [TransactionEntity] })
   my_transactions: TransactionEntity[];

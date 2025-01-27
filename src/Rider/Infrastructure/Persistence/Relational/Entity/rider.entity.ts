@@ -154,7 +154,7 @@ export class RiderEntity {
   //wallet
   @ApiProperty({ type: () => WalletEntity })
   @OneToOne(() => WalletEntity, (wallet) => wallet.rider)
-  my_wallet: BankEntity;
+  my_wallet: WalletEntity;
 
   //rides
 
