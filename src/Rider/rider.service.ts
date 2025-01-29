@@ -783,6 +783,7 @@ export class RiderService {
 
       rides.milestone = RiderMileStones.ENROUTE_TO_PICKUP_LOCATION;
       rides.enroute_to_pickup_locationAT = new Date();
+      rides.status = RideStatus.ONGOING;
       rides.checkpointStatus = {
         ...rides.checkpointStatus,
         enroute_to_pickup_location: true,
@@ -823,6 +824,7 @@ export class RiderService {
 
       rides.milestone = RiderMileStones.AT_PICKUP_LOCATION;
       rides.at_pickup_locationAT = new Date();
+      rides.status = RideStatus.ONGOING;
       rides.checkpointStatus = {
         ...rides.checkpointStatus,
         at_pickup_location: true,
@@ -863,6 +865,7 @@ export class RiderService {
 
       rides.milestone = RiderMileStones.PICKED_UP_PARCEL;
       rides.picked_up_parcelAT = new Date();
+      rides.status = RideStatus.ONGOING;
       rides.checkpointStatus = {
         ...rides.checkpointStatus,
         picked_up_parcel: true,
@@ -903,6 +906,7 @@ export class RiderService {
 
       rides.milestone = RiderMileStones.ENROUTE_TO_DROPOFF_LOCATION;
       rides.enroute_to_dropoff_locationAT = new Date();
+      rides.status = RideStatus.ONGOING;
       rides.checkpointStatus = {
         ...rides.checkpointStatus,
         enroute_to_dropoff_location: true,
@@ -943,6 +947,7 @@ export class RiderService {
 
       rides.milestone = RiderMileStones.AT_DROPOFF_LOCATION;
       rides.at_dropoff_locationAT = new Date();
+      rides.status = RideStatus.ONGOING;
       rides.checkpointStatus = {
         ...rides.checkpointStatus,
         at_dropoff_location: true,
@@ -973,90 +978,7 @@ export class RiderService {
     }
   }
 
-  // //drops off event
-  // async dropOffParcel(
-  //   rider: RiderEntity,
-  //   ridesID: string,
-  //   dto: DropOffCodeDto,
-  // ): Promise<StandardResponse<Rides>> {
-  //   try {
-  //     const rides = await this.ridesRepo.findByID(ridesID);
-  //     if (!rides) return this.responseService.notFound('ride not found');
-
-  //     if (!rides.order) return this.responseService.notFound('associated order not found')
-
-  //     let order = rides.order;
-  //     console.log(order)
-
-  //     if (dto.dropOff_code !== order.dropoffCode)
-  //       return this.responseService.notFound('drop off code not a match');
-
-  //     for (const itemsID of dto.itemsDroppedOff) {
-  //       const itemToUpdate = order.items.find((item) => item.id === itemsID);
-  //       if (!itemToUpdate)
-  //         return this.responseService.notFound(
-  //           `item with id ${itemsID} not found in this order`,
-  //         );
-
-  //       if (itemToUpdate.isDroppedOff)
-  //         return this.responseService.badRequest('item dropped off already');
-
-  //       //update the item
-  //       itemToUpdate.isDroppedOff = true;
-  //       itemToUpdate.droppedOffAT = new Date();
-
-  //       await this.orderItemRepo.save(itemToUpdate);
-  //     }
-
-  //     //update ride and order status
-  //     rides.milestone = RiderMileStones.DROPPED_OFF_PARCEL;
-  //     rides.dropped_off_parcelAT = new Date();
-
-  //     //remaining items
-  //     const remainingitems = order.items.filter(
-  //       (item) => !item.isDroppedOff,
-  //     ).length;
-  //     const allItemsDroppedOff = remainingitems === 0;
-
-  //     if (allItemsDroppedOff) {
-  //       rides.status = RideStatus.CONCLUDED;
-
-  //       order.orderStatus = OrderStatus.COMPLETED;
-  //       rider.RiderStatus = RiderStatus.AVAILABLE;
-  //       await this.riderRepository.save(rider);
-  //     } else {
-  //       rides.status = RideStatus.ONGOING;
-  //       order.orderStatus = OrderStatus.ONGOING;
-  //     }
-
-  //     rides.checkpointStatus = {
-  //       ...rides.checkpointStatus,
-  //       'dropped_off-parcel': true,
-  //     };
-
-  //     await this.ridesRepo.save(rides);
-  //     await this.orderRepository.save(order);
-
-  //     const savedRide = await this.ridesRepo.findByID(rides.ridesID);
-
-  //     await this.notificationsService.create({
-  //       message: `${rides.milestone} milestone reached for this order ${rides.order.orderID}`,
-  //       subject: 'MileStone Reached',
-  //       account: rider.riderID,
-  //     });
-
-  //     return this.responseService.success(
-  //       'milestone reached and checkpoint status updated successfully',
-  //       savedRide,
-  //     );
-  //   } catch (error) {
-  //     console.error(error);
-  //     return this.responseService.internalServerError(
-  //       'Error dropping off a parcel',
-  //       error.message,
-  //     );
-  //   }
-  // }
+  
 
   async dropOffParcel(
     rider: RiderEntity,

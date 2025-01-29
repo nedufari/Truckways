@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNumber } from "class-validator";
+import { IsNumber, IsString } from "class-validator";
 
 export class CashoutDto {
     @ApiProperty({type:Number, example:3000})
@@ -7,16 +7,16 @@ export class CashoutDto {
     amount : number
 
     @ApiProperty({type:String, example:'access bank'})
-    @IsNumber()
+    @IsString()
     accountName:string
 
 
     @ApiProperty({type:String, example:'12345'})
-    @IsNumber()
+    @IsString()
     bankCode:string
 
 
     @ApiProperty({type:String, example:'234567123'})
-    @IsNumber()
+    @IsString()
     accountNumber:string
 }

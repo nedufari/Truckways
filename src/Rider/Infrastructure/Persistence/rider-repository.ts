@@ -6,6 +6,8 @@ import { Transactions } from "src/Rider/Domain/transaction";
 import { Vehicle } from "src/Rider/Domain/vehicle";
 import { Wallet } from "src/Rider/Domain/wallet";
 import { PaginationDto, SearchDto } from "src/utils/shared-dto/pagination.dto";
+import { Repository } from "typeorm";
+import { TransactionEntity } from "./Relational/Entity/transaction.entity";
 
 export abstract class RiderRepository{
     abstract create(rider:Rider):Promise<Rider>
@@ -56,6 +58,9 @@ export abstract class TransactionRepository{
     abstract find(dto:PaginationDto):Promise<{data:Transactions[], total:number}>
     abstract save (transaction:Transactions):Promise<Transactions>
     abstract searchTransactions (searchdto:SearchDto):Promise<{data:Transactions[], total:number}>
+    abstract executeWithTransaction<T>(
+        operation: (repository: Repository<TransactionEntity>) => Promise<T>
+      ): Promise<T>;
 }
 
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags, getSchemaPath } from '@nestjs/swagger';
 import { Roles } from 'src/Auth/Decorator/role.decorator';
 import { JwtGuard } from 'src/Auth/Guard/jwt.guard';
@@ -11,7 +11,7 @@ import { StandardResponse } from 'src/utils/services/response.service';
 
 @ApiTags('Wallet')
 @ApiBearerAuth()
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard,RoleGuard)
 @Controller({
   path: 'wallet/',
   version: '1',
@@ -19,6 +19,7 @@ import { StandardResponse } from 'src/utils/services/response.service';
 export class WalletController {
   constructor(private readonly walletService: WalletService) {}
 
+  @Roles(Role.RIDER)
   @Post('initialize-cashout')
   @ApiOkResponse({
     schema: {
@@ -40,5 +41,30 @@ export class WalletController {
     @Body() dto: CashoutDto,
   ): Promise<StandardResponse<Transactions>> {
     return await this.walletService.cashout(req.user, dto);
+  }
+
+
+  @Roles(Role.ADMIN)
+  @Post('transfer-to-wallet/:riderID/:orderID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<any>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Transactions),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'initialize fun transfer from admin to rider' })
+  async Fundwallet(
+    @Param('riderID') riderId:string,
+    @Param('orderID') orderID: string,
+  ): Promise<StandardResponse<any>> {
+    return await this.walletService.FundWallet(riderId,orderID);
   }
 }

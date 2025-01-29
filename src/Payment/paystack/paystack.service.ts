@@ -14,6 +14,20 @@ import { v4 as uuidv4 } from 'uuid';
 import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
 import { WalletEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/wallet.entity';
 
+
+interface TransferRecipientParams {
+  accountNumber: string;
+  bankCode: string;
+  accountName: string;
+}
+
+interface TransferParams {
+  amount: number;
+  recipientCode: string;
+  reference: string;
+}
+
+
 @Injectable()
 export class PaystackService {
   private readonly _config: PayStackConfig;
@@ -56,6 +70,8 @@ export class PaystackService {
 
 
 
+
+
   public TransferToWallet = async (
     amount: number,
     customer: PaystackCustomer,
@@ -81,7 +97,25 @@ export class PaystackService {
     return response;
   };
 
+  async createTransferRecipient(details: TransferRecipientParams) {
+    return this.customAxiosService.post<any>(`${this._config.baseUrl}/transferrecipient`, {
+      type: 'nuban',
+      name: details.accountName,
+      account_number: details.accountNumber,
+      bank_code: details.bankCode,
+      currency: 'NGN'
+    });
+  }
 
+  async initiateTransfer(params: TransferParams) {
+    return this.customAxiosService.post<any>(`${this._config.baseUrl}/transfer`, {
+      source: 'balance',
+      amount: params.amount * 100,
+      recipient: params.recipientCode,
+      reference: params.reference,
+      reason: 'Wallet withdrawal'
+    });
+  }
 
 
   public verifyTransaction = async (reference: string) => {

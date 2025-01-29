@@ -1,8 +1,4 @@
-import { RiderEntity } from '../Entity/rider.entity';
-import { Rider } from 'src/Rider/Domain/rider';
-import { OrderMapper } from 'src/Order/Infrastructure/Persistence/Relational/Mapper/order.mapper';
-import { BidMapper } from 'src/Order/Infrastructure/Persistence/Relational/Mapper/bids.mapper';
-import { TransactionMapper } from './transaction.mapper';
+
 import { Rides } from 'src/Rider/Domain/rides';
 import { RidesEntity } from '../Entity/rides.entity';
 
@@ -12,6 +8,7 @@ export class RidesMapper{
     domainEntity.id = raw.id;
     domainEntity.at_pickup_locationAT = raw.at_pickup_locationAT;
     domainEntity.at_dropoff_locationAT = raw.at_dropoff_locationAT;
+    domainEntity.picked_up_parcelAT = raw.picked_up_parcelAT;
     domainEntity.enroute_to_pickup_locationAT = raw.enroute_to_pickup_locationAT;
     domainEntity.enroute_to_dropoff_locationAT = raw.enroute_to_dropoff_locationAT;
     domainEntity.dropped_off_parcelAT = raw.dropped_off_parcelAT;
@@ -41,6 +38,7 @@ export class RidesMapper{
     persistenceEntity.at_dropoff_locationAT = domainEntity.at_dropoff_locationAT;
     persistenceEntity.at_pickup_locationAT = domainEntity.at_pickup_locationAT;
     persistenceEntity.dropped_off_parcelAT = domainEntity.dropped_off_parcelAT;
+    persistenceEntity.picked_up_parcelAT = domainEntity.picked_up_parcelAT
     persistenceEntity.cancelledAt = domainEntity.cancelledAt;
     persistenceEntity.checkpointStatus = domainEntity.checkpointStatus;
     persistenceEntity.status = domainEntity.status;

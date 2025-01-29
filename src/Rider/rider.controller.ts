@@ -689,7 +689,7 @@ export class RiderController {
     @Req() req,
     @Param('rideID') rideID: string,
   ): Promise<StandardResponse<Rides>> {
-    return await this.riderService.enrouteToPickupLocation(req.user, rideID);
+    return await this.riderService.AtDropOffLocation(req.user, rideID);
   }
 
   @Patch('checkpoint/droppedOff-parcel/:rideID')

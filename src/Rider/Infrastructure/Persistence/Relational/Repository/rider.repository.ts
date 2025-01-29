@@ -1,4 +1,4 @@
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import {
   BankRepository,
   RiderRepository,
@@ -7,7 +7,7 @@ import {
   VehicleRepository,
   WalletRepository,
 } from '../../rider-repository';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { RiderMapper } from '../Mapper/rider.mapper';
 import { RiderEntity } from '../Entity/rider.entity';
 import { Rider } from 'src/Rider/Domain/rider';
@@ -75,7 +75,7 @@ export class RiderRelationalRepository implements RiderRepository {
       skip: (page - 1) * limit,
       take: limit,
       order: { [sortBy]: sortOrder },
-      relations: ['wallet', 'vehicle'],
+      relations: ['vehicle'],
     });
     const riders = result.map(RiderMapper.toDomain);
     return { data: riders, total };
@@ -311,7 +311,7 @@ export class WalletRelationalRepository implements WalletRepository {
   async findByRiderID(id: string): Promise<Wallet> {
     const wallet = await this.walletEntityRepository.findOne({
       where: { rider: { riderID: id } },
-      relations: ['rider'],
+      relations: ['rider','rider.my_wallet'],
     });
     return wallet ? WalletMapper.toDomain(wallet) : null;
   }
@@ -354,99 +354,111 @@ export class WalletRelationalRepository implements WalletRepository {
   }
 }
 
+
 export class TransactionRelationalRepository implements TransactionRepository {
+  private repository: Repository<TransactionEntity>;
+
   constructor(
-    @InjectRepository(TransactionEntity)
-    private transactionEntityRepository: Repository<TransactionEntity>,
-  ) {}
+    @InjectDataSource() private readonly dataSource: DataSource
+  ) {
+    this.repository = this.dataSource.getRepository(TransactionEntity);
+  }
 
   async create(transaction: Transactions): Promise<Transactions> {
-    const persistencetransaction = TransactionMapper.toPersistence(transaction);
-    const savedTransaction = await this.transactionEntityRepository.save(
-      persistencetransaction,
-    );
+    const persistenceTransaction = TransactionMapper.toPersistence(transaction);
+    const savedTransaction = await this.repository.save(persistenceTransaction);
     return TransactionMapper.toDomain(savedTransaction);
   }
 
   async findByID(id: string): Promise<Transactions> {
-    const wallet = await this.transactionEntityRepository.findOne({
+    const transaction = await this.repository.findOne({
       where: { transactionID: id },
     });
-    return wallet ? TransactionMapper.toDomain(wallet) : null;
+    return transaction ? TransactionMapper.toDomain(transaction) : null;
   }
 
   async findByReference(reference: string): Promise<Transactions> {
-    const wallet = await this.transactionEntityRepository.findOne({
+    const transaction = await this.repository.findOne({
       where: { reference: reference },
     });
-    return wallet ? TransactionMapper.toDomain(wallet) : null;
+    return transaction ? TransactionMapper.toDomain(transaction) : null;
   }
 
   async find(
     dto: PaginationDto,
   ): Promise<{ data: Transactions[]; total: number }> {
     const { page, limit, sortBy, sortOrder } = dto;
-    const [result, total] = await this.transactionEntityRepository.findAndCount(
-      {
-        skip: (page - 1) * limit,
-        take: limit,
-        order: { [sortBy]: sortOrder },
-        relations: ['rider'],
-      },
-    );
-    const wallets = result.map(TransactionMapper.toDomain);
-    return { data: wallets, total };
+    const [result, total] = await this.repository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sortBy]: sortOrder },
+      relations: ['rider'],
+    });
+    const transactions = result.map(TransactionMapper.toDomain);
+    return { data: transactions, total };
   }
 
   async save(transaction: Transactions): Promise<Transactions> {
-    const persistenceWallet = TransactionMapper.toPersistence(transaction);
-    const savedWallet = await this.transactionEntityRepository.save(
-      persistenceWallet,
-      { reload: true },
-    );
-
-    return TransactionMapper.toDomain(savedWallet);
+    const persistenceTransaction = TransactionMapper.toPersistence(transaction);
+    const savedTransaction = await this.repository.save(persistenceTransaction, {
+      reload: true,
+    });
+    return TransactionMapper.toDomain(savedTransaction);
   }
-
 
   async searchTransactions(
     searchDto: SearchDto,
   ): Promise<{ data: Transactions[]; total: number }> {
     const { keyword, page, Perpage, sort, sortOrder } = searchDto;
 
-    const qb = this.transactionEntityRepository.createQueryBuilder('tran');
+    const qb = this.repository.createQueryBuilder('tran');
 
     if (keyword) {
       qb.where('tran.transactionID ILIKE :keyword', {
         keyword: `%${keyword}%`,
-      });
-      qb.orWhere('tran.walletAddrress ILIKE :keyword', {
-        keyword: `%${keyword}%`,
-      });
-      qb.orWhere('tran.description ILIKE :keyword', {
-        keyword: `%${keyword}%`,
-      });
-      qb.orWhere('tran.reference ILIKE :keyword', {
-        keyword: `%${keyword}%`,
-      });
+      })
+        .orWhere('tran.walletAddrress ILIKE :keyword', {
+          keyword: `%${keyword}%`,
+        })
+        .orWhere('tran.description ILIKE :keyword', {
+          keyword: `%${keyword}%`,
+        })
+        .orWhere('tran.reference ILIKE :keyword', {
+          keyword: `%${keyword}%`,
+        });
     }
 
-    // Sorting
     qb.orderBy(`tran.${sort}`, sortOrder);
 
-    // Pagination
     if (page && Perpage) {
       qb.skip((page - 1) * Perpage).take(Perpage);
     }
 
-    // Execute the query
     const [transactions, total] = await qb.getManyAndCount();
+    const domainTransactions = transactions.map(TransactionMapper.toDomain);
 
-    return { data: transactions, total };
+    return { data: domainTransactions, total };
   }
 
-}
+  async executeWithTransaction<T>(
+    operation: (repository: Repository<TransactionEntity>) => Promise<T>
+  ): Promise<T> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
+    try {
+      const result = await operation(queryRunner.manager.getRepository(TransactionEntity));
+      await queryRunner.commitTransaction();
+      return result;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+}
   export class RidesRelationalRepository implements RidesRepository {
     constructor(
       @InjectRepository(RidesEntity)

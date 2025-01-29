@@ -9,7 +9,7 @@ export class WalletEntity{
     id:number
 
     @ApiProperty({type:String})
-    @Column({unique:true})
+    @Column({ nullable:true})
     walletAddrress:string 
 
     @ApiProperty({type:Number})
