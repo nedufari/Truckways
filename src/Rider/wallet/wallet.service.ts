@@ -24,7 +24,7 @@ export class WalletService {
   constructor(
     private readonly walletRepository: WalletRepository,
     private readonly percentageRepository: PercentageConfigRepository,
-    private readonly orderRepository:OrderRepository,
+    private readonly orderRepository: OrderRepository,
     private transactionRepository: TransactionRepository,
     private responseService: ResponseService,
     private notificationsService: NotificationsService,
@@ -34,13 +34,11 @@ export class WalletService {
 
   async FundWallet(
     RiderID: string,
-    orderId:string,
-   
+    orderId: string,
   ): Promise<StandardResponse<any>> {
     try {
-
-      const order = await this.orderRepository.findByID(orderId)
-      if (!order) return this.responseService.notFound('order not found')
+      const order = await this.orderRepository.findByID(orderId);
+      if (!order) return this.responseService.notFound('order not found');
       const existingTransaction =
         await this.transactionRepository.findByReference(order.orderID);
       if (existingTransaction) {
@@ -66,11 +64,11 @@ export class WalletService {
         amount: transferAmount,
         type: TransactionType.CREDIT,
         status: TransactionStatus.PENDING,
-        walletAddrress:wallet.walletAddrress,
+        walletAddrress: wallet.walletAddrress,
         reference: order.orderID,
         description: 'Partial payment from order',
         rider: order.Rider,
-        metadata: { type: 'wallet_funding', orderReference:order.orderID },
+        metadata: { type: 'wallet_funding', orderReference: order.orderID },
         id: 0,
         createdAT: new Date(),
       });
@@ -97,144 +95,155 @@ export class WalletService {
     reference: string,
     verifiedAmount: number,
   ): Promise<void> {
-    await this.transactionRepository.executeWithTransaction(async (repository) => {
-      const transaction = await repository.findOne({
-        where: { reference },
-        lock: { mode: 'pessimistic_write' },
-      });
+    await this.transactionRepository.executeWithTransaction(
+      async (repository) => {
+        const transaction = await repository.findOne({
+          where: { reference },
+          lock: { mode: 'pessimistic_write' },
+        });
 
-      if (!transaction || transaction.status !== TransactionStatus.PENDING) {
-        throw new Error(`Invalid transaction for reference: ${reference}`);
-      }
+        if (!transaction || transaction.status !== TransactionStatus.PENDING) {
+          throw new Error(`Invalid transaction for reference: ${reference}`);
+        }
 
-      if (verifiedAmount !== transaction.amount) {
-        throw new Error(
-          `Amount mismatch: Expected ${transaction.amount}, got ${verifiedAmount}`,
+        if (verifiedAmount !== transaction.amount) {
+          throw new Error(
+            `Amount mismatch: Expected ${transaction.amount}, got ${verifiedAmount}`,
+          );
+        }
+
+        const wallet = await this.walletRepository.findByRiderID(
+          transaction.rider.riderID,
         );
-      }
+        if (!wallet) throw new Error(`Wallet not found for ${reference}`);
 
-      const wallet = await this.walletRepository.findByRiderID(
-        transaction.rider.riderID,
-      );
-      if (!wallet) throw new Error(`Wallet not found for ${reference}`);
+        wallet.balance = Number(wallet.balance) + verifiedAmount;
+        await this.walletRepository.save(wallet);
 
-      wallet.balance = Number(wallet.balance) + verifiedAmount;
-      await this.walletRepository.save(wallet);
+        transaction.status = TransactionStatus.SUCCESSFUL;
+        await repository.save(transaction);
 
-      transaction.status = TransactionStatus.SUCCESSFUL;
-      await repository.save(transaction);
-
-      await this.notificationsService.create({
-        subject: 'Wallet Funded Successfully',
-        message: `Your wallet has been credited with ${verifiedAmount}`,
-        account: transaction.rider.riderID,
-      });
-    });
+        await this.notificationsService.create({
+          subject: 'Wallet Funded Successfully',
+          message: `Your wallet has been credited with ${verifiedAmount}`,
+          account: transaction.rider.riderID,
+        });
+      },
+    );
   }
 
   async cashout(
     rider: RiderEntity,
     dto: CashoutDto,
   ): Promise<StandardResponse<any>> {
-    return this.transactionRepository.executeWithTransaction(async (repository) => {
-      try {
-        const wallet = await this.walletRepository.findByRiderID(
-          rider.riderID,
-        );
-        if (!wallet) return this.responseService.notFound('Wallet not found');
-        if (Number(wallet.balance) < dto.amount) {
-          return this.responseService.badRequest('Insufficient balance');
-        }
+    return this.transactionRepository.executeWithTransaction(
+      async (repository) => {
+        try {
+          const wallet = await this.walletRepository.findByRiderID(
+            rider.riderID,
+          );
+          if (!wallet) return this.responseService.notFound('Wallet not found');
+          if (Number(wallet.balance) < dto.amount) {
+            return this.responseService.badRequest('Insufficient balance');
+          }
 
-        const recipientResponse =
-          await this.paystackService.createTransferRecipient({
-            accountNumber: dto.accountNumber,
-            bankCode: dto.bankCode,
-            accountName: dto.accountName,
+          const recipientResponse =
+            await this.paystackService.createTransferRecipient({
+              accountNumber: dto.accountNumber,
+              bankCode: dto.bankCode,
+              accountName: dto.accountName,
+            });
+
+          if (!recipientResponse.data.recipient_code) {
+            return this.responseService.badRequest(
+              'Failed to create transfer recipient',
+            );
+          }
+
+          const transferResponse = await this.paystackService.initiateTransfer({
+            amount: dto.amount,
+            recipientCode: recipientResponse.data.recipient_code,
+            reference: `CT-${await this.generatorService.generateUserID()}`,
           });
 
-        if (!recipientResponse.data.recipient_code) {
-          return this.responseService.badRequest(
-            'Failed to create transfer recipient',
+          if (!transferResponse.data.status) {
+            return this.responseService.badRequest(
+              'Transfer initiation failed',
+            );
+          }
+
+          const transaction = await this.transactionRepository.create({
+            transactionID: `TrkW${await this.generatorService.generateUserID()}`,
+            amount: dto.amount,
+            type: TransactionType.DEBIT,
+            status: TransactionStatus.PENDING,
+            reference: transferResponse.data.reference,
+            description: 'Withdraw to bank account',
+            rider: rider,
+            metadata: {
+              type: 'withdrawal',
+              bankDetails: {
+                bankCode: dto.bankCode,
+                accountNumber: dto.accountNumber,
+                accountName: dto.accountName,
+              },
+              //transferReference: transferResponse.data.reference,
+            },
+            id: 0,
+            createdAT: new Date(),
+          });
+
+          await this.transactionRepository.save(transaction);
+
+          await this.notificationsService.create({
+            subject: 'Withdrawal Initiated',
+            message: `Processing withdrawal of ${dto.amount}`,
+            account: rider.riderID,
+          });
+
+          return this.responseService.success(
+            'Withdrawal initiated',
+            transaction,
+          );
+        } catch (error) {
+          console.error('Cashout Error:', error);
+          return this.responseService.internalServerError(
+            'Withdrawal processing failed',
           );
         }
-
-        const transferResponse = await this.paystackService.initiateTransfer({
-          amount: dto.amount,
-          recipientCode: recipientResponse.data.recipient_code,
-          reference: `CT-${await this.generatorService.generateUserID()}`,
-        });
-
-        if (!transferResponse.data.status) {
-          return this.responseService.badRequest('Transfer initiation failed');
-        }
-
-        const transaction = await this.transactionRepository.create({
-          transactionID: `TrkW${await this.generatorService.generateUserID()}`,
-          amount: dto.amount,
-          type: TransactionType.DEBIT,
-          status: TransactionStatus.PENDING,
-          reference: transferResponse.data.reference,
-          description: 'Withdraw to bank account',
-          rider: rider,
-          metadata: {
-            type: 'withdrawal',
-            bankDetails: {
-              bankCode: dto.bankCode,
-              accountNumber: dto.accountNumber,
-              accountName: dto.accountName
-            },
-            //transferReference: transferResponse.data.reference,
-          },
-          id: 0,
-          createdAT: new Date(),
-        });
-
-        await this.transactionRepository.save(transaction);
-
-        await this.notificationsService.create({
-          subject: 'Withdrawal Initiated',
-          message: `Processing withdrawal of ${dto.amount}`,
-          account: rider.riderID,
-        });
-
-        return this.responseService.success('Withdrawal initiated', transaction);
-      } catch (error) {
-        console.error('Cashout Error:', error);
-        return this.responseService.internalServerError(
-          'Withdrawal processing failed',
-        );
-      }
-    });
+      },
+    );
   }
 
   async processWithdrawalSuccess(reference: string): Promise<void> {
-    await this.transactionRepository.executeWithTransaction(async (repository) => {
-      const transaction = await repository.findOne({
-        where: { reference },
-        lock: { mode: 'pessimistic_write' },
-      });
+    await this.transactionRepository.executeWithTransaction(
+      async (repository) => {
+        const transaction = await repository.findOne({
+          where: { reference },
+          lock: { mode: 'pessimistic_write' },
+        });
 
-      if (!transaction || transaction.status !== TransactionStatus.PENDING) {
-        throw new Error(`Invalid transaction for reference: ${reference}`);
-      }
+        if (!transaction || transaction.status !== TransactionStatus.PENDING) {
+          throw new Error(`Invalid transaction for reference: ${reference}`);
+        }
 
-      const wallet = await this.walletRepository.findByRiderID(
-        transaction.rider.riderID,
-      );
-      if (!wallet) throw new Error(`Wallet not found for ${reference}`);
+        const wallet = await this.walletRepository.findByRiderID(
+          transaction.rider.riderID,
+        );
+        if (!wallet) throw new Error(`Wallet not found for ${reference}`);
 
-      wallet.balance = Number(wallet.balance) - transaction.amount;
-      await this.walletRepository.save(wallet);
+        wallet.balance = Number(wallet.balance) - transaction.amount;
+        await this.walletRepository.save(wallet);
 
-      transaction.status = TransactionStatus.SUCCESSFUL;
-      await repository.save(transaction);
+        transaction.status = TransactionStatus.SUCCESSFUL;
+        await repository.save(transaction);
 
-      await this.notificationsService.create({
-        subject: 'Withdrawal Successful',
-        message: `Withdrawn ${transaction.amount} successfully`,
-        account: transaction.rider.riderID,
-      });
-    });
+        await this.notificationsService.create({
+          subject: 'Withdrawal Successful',
+          message: `Withdrawn ${transaction.amount} successfully`,
+          account: transaction.rider.riderID,
+        });
+      },
+    );
   }
 }

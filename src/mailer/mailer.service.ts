@@ -66,10 +66,10 @@ export class MailService {
     otpCode: string,
     
   ): Promise<void> {
-    const subject = 'Password Reset for EaseHub';
+    const subject = 'Password Reset for Truckways';
 
     // Load the HTML template
-    const templatePath = this.resolveTemplatePath('password-reset-mail.html');
+    const templatePath = this.resolveTemplatePath('reset-password.mail.html');
     let content = fs.readFileSync(templatePath, 'utf-8');
 
     content = content.replace('${otpCode}', otpCode);

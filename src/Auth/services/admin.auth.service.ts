@@ -252,7 +252,7 @@ export class AdminAuthService {
       expirationTime.setHours(expirationTime.getHours() + 1);
       admin.resetPasswordToken = resetOtp;
       admin.resetPasswordTokenExpTime = expirationTime;
-      await this.adminRepository.update(admin.id, admin);
+      await this.adminRepository.save( admin);
 
       await this.notificationService.create({
         message: `Hi ${admin.name}, password reset otp sent.`,
@@ -327,7 +327,7 @@ export class AdminAuthService {
       (admin.resetPasswordToken = null),
         (admin.resetPasswordTokenExpTime = null);
 
-      await this.adminRepository.update(admin.id, admin);
+      await this.adminRepository.save( admin);
 
       await this.notificationService.create({
         message: `Hi ${admin.name}, password reset sucessful.`,

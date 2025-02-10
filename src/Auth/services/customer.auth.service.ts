@@ -296,7 +296,7 @@ export class CustomerAuthService {
       expirationTime.setHours(expirationTime.getHours() + 1);
       customer.resetPasswordToken = resetOtp;
       customer.resetPasswordTokenExpTime = expirationTime;
-      await this.customerRepository.update(customer.id, customer);
+      await this.customerRepository.save(customer);
 
       await this.notificationService.create({
         message: `Hi ${customer.name}, password reset otp sent.`,
@@ -371,7 +371,7 @@ export class CustomerAuthService {
       (customer.resetPasswordToken = null),
         (customer.resetPasswordTokenExpTime = null);
 
-      await this.customerRepository.update(customer.id, customer);
+      await this.customerRepository.save( customer);
 
       await this.notificationService.create({
         message: `Hi ${customer.name}, password reset sucessful.`,
