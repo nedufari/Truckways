@@ -313,7 +313,7 @@ export class RiderService {
     }
   }
 
-  async VehicleRofile(
+  async VehicleProfile(
     rider: RiderEntity,
     dto: VehicleDto,
     mediafile: Express.Multer.File[],

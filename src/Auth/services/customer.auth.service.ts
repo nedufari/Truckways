@@ -89,7 +89,7 @@ export class CustomerAuthService {
 
       //create and save otp
       const otpCode = await this.generatorService.generateEmailToken();
-      console.log(otpCode)
+      console.log(otpCode);
       let now = new Date();
 
       const twominutelater = new Date(now.getTime() + 120000);
@@ -108,8 +108,8 @@ export class CustomerAuthService {
       await this.mailService.VerifyOtpMail(email, otpCode);
 
       const user = await this.customerRepository.create({
-        email:email,
-        name:name,
+        email: email,
+        name: name,
         phoneNumber: undefined,
         password: hashpassword,
         customerID: customerIdcustom,
@@ -129,7 +129,7 @@ export class CustomerAuthService {
           lon: 0,
         },
         my_cart: undefined,
-        my_orders:[]
+        my_orders: [],
       });
 
       //save notification
@@ -175,15 +175,8 @@ export class CustomerAuthService {
           'user associated to otp not found',
         );
 
-      // // Update customer using proper update object
-      // await this.customerRepository.update(customer.id, {
-      //   isVerified: true,
-      //   updatedAT: new Date(),
-      // });
-
-      customer.isVerified = true,
-      customer.updatedAT = new Date()
-      await this.customerRepository.save(customer)
+      (customer.isVerified = true), (customer.updatedAT = new Date());
+      await this.customerRepository.save(customer);
 
       // Fetch the updated customer
       const updatedCustomer = await this.customerRepository.findByEmail(
@@ -208,6 +201,13 @@ export class CustomerAuthService {
         customer: customer as CustomerEntity,
       });
 
+      // Generate and return JWT token
+      const token = await this.generatorService.signToken(
+        customer.id,
+        customer.email,
+        customer.role,
+      );
+
       // Save notification
       await this.notificationService.create({
         message: `Hello ${updatedCustomer.name}, your account has been verified successfully and order Cart created.`,
@@ -217,7 +217,7 @@ export class CustomerAuthService {
 
       return this.responseService.success(
         'email verified successfully and customer Cart created',
-        { customer: updatedCustomer, cart: cart },
+        { customer: updatedCustomer, cart: cart, onboardingToken: token },
       );
     } catch (error) {
       return this.responseService.internalServerError(
@@ -371,7 +371,7 @@ export class CustomerAuthService {
       (customer.resetPasswordToken = null),
         (customer.resetPasswordTokenExpTime = null);
 
-      await this.customerRepository.save( customer);
+      await this.customerRepository.save(customer);
 
       await this.notificationService.create({
         message: `Hi ${customer.name}, password reset sucessful.`,

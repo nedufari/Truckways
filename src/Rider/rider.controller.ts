@@ -302,7 +302,7 @@ export class RiderController {
     @UploadedFiles() file: Express.Multer.File[],
     @Body() dto: VehicleDto,
   ): Promise<StandardResponse<Vehicle>> {
-    return await this.riderService.VehicleRofile(req.user, dto, file);
+    return await this.riderService.VehicleProfile(req.user, dto, file);
   }
 
   @Patch('payment-profile/')
