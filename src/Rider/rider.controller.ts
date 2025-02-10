@@ -50,9 +50,6 @@ import { Rides } from './Domain/rides';
 import { DropOffCodeDto } from './Dto/dropOff-code.dto';
 
 @ApiTags('Rider')
-@ApiBearerAuth()
-@UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
 @Controller({
   path: 'rider/',
   version: '1',
@@ -60,6 +57,9 @@ import { DropOffCodeDto } from './Dto/dropOff-code.dto';
 export class RiderController {
   constructor(private readonly riderService: RiderService) {}
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Get('all-rider-notifications')
   @ApiOkResponse({
     schema: {
@@ -98,6 +98,9 @@ export class RiderController {
     return await this.riderService.fetchAllNotifications(req.user, dto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Patch('/mark-as-read/:notificationId')
   @ApiParam({
     name: 'notificationId',
@@ -127,6 +130,9 @@ export class RiderController {
     return this.riderService.markNotificationAsRead(req.user, notificationId);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Patch('mark-multiple-as-read')
   @ApiBody({
     schema: {
@@ -163,6 +169,9 @@ export class RiderController {
     return this.riderService.markMultipleNotificationsAsRead(req.user, dto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Patch('mark-all-as-read')
   @ApiOkResponse({
     schema: {
@@ -220,6 +229,7 @@ export class RiderController {
       },
     },
   })
+
   @Patch('personal-profile/')
   @ApiOkResponse({
     schema: {
@@ -237,7 +247,7 @@ export class RiderController {
   })
   @ApiOperation({ summary: 'first onboarding phase. Adding personal profile' })
   // @HttpCode(HttpStatus.OK)
-  @UseInterceptors(FilesInterceptor('images', 2))
+  @UseInterceptors(FilesInterceptor('images', 3))
   async riderPersonalProfile(
     @Req() req,
     @UploadedFiles() file: Express.Multer.File[],
@@ -269,6 +279,7 @@ export class RiderController {
       },
     },
   })
+
   @Patch('vehicle-profile/')
   @ApiOkResponse({
     schema: {
@@ -317,6 +328,9 @@ export class RiderController {
     return await this.riderService.PaymentProfile(req.user, dto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Get('all-available-bids')
   @ApiOkResponse({
     schema: {
@@ -367,6 +381,9 @@ export class RiderController {
     return await this.riderService.FetchallbidsFromcustomer(dto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Get('one-bid/:BidID')
   @ApiOkResponse({
     schema: {
@@ -389,6 +406,9 @@ export class RiderController {
     return await this.riderService.FetchOneBid(BidId);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Get('all-my-involved-bids')
   @ApiOkResponse({
     schema: {
@@ -438,6 +458,9 @@ export class RiderController {
     return await this.riderService.FetchallMyInvolvedBids(req.user, dto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Patch('bid-action/:BidID')
   @ApiOkResponse({
     schema: {
@@ -468,6 +491,9 @@ export class RiderController {
     );
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Patch('counter-bid/:BidID')
   @ApiOkResponse({
     schema: {
@@ -494,6 +520,9 @@ export class RiderController {
     return await this.riderService.CounterBid(req.user, BidId, dto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Get('one-order/:orderID')
   @ApiOkResponse({
     schema: {
@@ -516,6 +545,9 @@ export class RiderController {
     return await this.riderService.FetchOneOrder(orderId);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Get('all-my-accepted-orders')
   @ApiOkResponse({
     schema: {
@@ -567,6 +599,9 @@ export class RiderController {
     return await this.riderService.FetchAllMyOrders(dto, req.user);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Patch('checkpoint/enroute-to-pickupLocation/:rideID')
   @ApiOkResponse({
     schema: {
@@ -592,6 +627,9 @@ export class RiderController {
     return await this.riderService.enrouteToPickupLocation(req.user, rideID);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Patch('checkpoint/at-pickupLocation/:rideID')
   @ApiOkResponse({
     schema: {
@@ -616,7 +654,9 @@ export class RiderController {
   ): Promise<StandardResponse<Rides>> {
     return await this.riderService.AtPickupLocation(req.user, rideID);
   }
-
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Patch('checkpoint/picked-upParcel/:rideID')
   @ApiOkResponse({
     schema: {
@@ -642,6 +682,9 @@ export class RiderController {
     return await this.riderService.PickedUpParcel(req.user, rideID);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Patch('checkpoint/enroute-to-dropOffLocation/:rideID')
   @ApiOkResponse({
     schema: {
@@ -667,6 +710,9 @@ export class RiderController {
     return await this.riderService.enrouteToDropOffLocation(req.user, rideID);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Patch('checkpoint/at-dropOffLocation/:rideID')
   @ApiOkResponse({
     schema: {
@@ -692,6 +738,9 @@ export class RiderController {
     return await this.riderService.AtDropOffLocation(req.user, rideID);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Patch('checkpoint/droppedOff-parcel/:rideID')
   @ApiOkResponse({
     schema: {
@@ -718,7 +767,9 @@ export class RiderController {
     return await this.riderService.dropOffParcel(req.user, rideID, dto);
   }
 
-
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+  @Roles(Role.RIDER)
   @Get('one-ride/:rideID')
   @ApiOkResponse({
     schema: {
@@ -742,6 +793,9 @@ export class RiderController {
     return await this.riderService.FetchOneRide(req.user,orderId);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+@Roles(Role.RIDER)
   @Get('all-rides')
   @ApiOkResponse({
     schema: {

@@ -244,8 +244,9 @@ export class RiderService {
       );
 
       const uploadResults = await Promise.all(fileUploadPromises);
-      const driverlicencefront = uploadResults[0].secure_url;
-      const driverlicenceback = uploadResults[1].secure_url;
+      const profilePicture = uploadResults[0].secure_url;
+      const driverlicencefront = uploadResults[1].secure_url;
+      const driverlicenceback = uploadResults[2].secure_url;
 
       // Create a copy of the rider without the address first
       const { address: _, ...RiderWithoutAddress } = rider;
@@ -254,6 +255,7 @@ export class RiderService {
       const updateObject: any = {
         ...RiderWithoutAddress,
         ...dto,
+        profilePicture:profilePicture,
         driversLicenceFront: driverlicencefront,
         driversLicenceBack: driverlicenceback,
         updatedAT: new Date(),

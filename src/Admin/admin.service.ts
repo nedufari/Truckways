@@ -869,27 +869,28 @@ export class AdminService {
     try {
       const rider = await this.riderRepo.findByID(riderID);
       if (!rider) return this.responseService.notFound('rider not found');
-
-      if (dto && dto.block === true) {
-        rider.isBlocked = true;
-      }
+  
+      // Update the blocked status based on dto.block value
+      rider.isBlocked = dto.block;
       const updatedRider = await this.riderRepo.save(rider);
-
-      // Save notification
+  
+      // Prepare notification message based on block status
+      const action = dto.block ? 'blocked' : 'unblocked';
       await this.notificationsService.create({
-        message: `${rider.name} has been blocked  by ${admin.name}.`,
-        subject: 'Rider Blocked',
+        message: `${rider.name} has been ${action} by ${admin.name}.`,
+        subject: `Rider ${action.charAt(0).toUpperCase() + action.slice(1)}`,
         account: updatedRider.riderID,
       });
-
+  
       return this.responseService.success(
-        'rider account blocked successfully',
+        `rider account ${action} successfully`,
         updatedRider,
       );
     } catch (error) {
       console.error(error);
+      const action = dto.block ? 'blocking' : 'unblocking';
       return this.responseService.internalServerError(
-        'Error blocking a rider for truckways',
+        `Error ${action} a rider for truckways`,
         error.message,
       );
     }
