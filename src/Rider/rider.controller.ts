@@ -230,6 +230,10 @@ export class RiderController {
     },
   })
 
+
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+  @Roles(Role.RIDER)
   @Patch('personal-profile/')
   @ApiOkResponse({
     schema: {
@@ -280,6 +284,10 @@ export class RiderController {
     },
   })
 
+
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+  @Roles(Role.RIDER)
   @Patch('vehicle-profile/')
   @ApiOkResponse({
     schema: {
@@ -305,6 +313,10 @@ export class RiderController {
     return await this.riderService.VehicleProfile(req.user, dto, file);
   }
 
+
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+  @Roles(Role.RIDER)
   @Patch('payment-profile/')
   @ApiOkResponse({
     schema: {
