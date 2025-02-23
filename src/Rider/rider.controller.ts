@@ -16,6 +16,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   Req,
   UploadedFiles,
@@ -47,7 +48,7 @@ import { RoleGuard } from 'src/Auth/Guard/role.guard';
 import { Roles } from 'src/Auth/Decorator/role.decorator';
 import { Role } from 'src/Enums/users.enum';
 import { Rides } from './Domain/rides';
-import { DropOffCodeDto } from './Dto/dropOff-code.dto';
+import { CancelRideDto, DropOffCodeDto } from './Dto/dropOff-code.dto';
 
 @ApiTags('Rider')
 @Controller({
@@ -59,7 +60,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Get('all-rider-notifications')
   @ApiOkResponse({
     schema: {
@@ -100,7 +101,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Patch('/mark-as-read/:notificationId')
   @ApiParam({
     name: 'notificationId',
@@ -132,7 +133,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Patch('mark-multiple-as-read')
   @ApiBody({
     schema: {
@@ -171,7 +172,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Patch('mark-all-as-read')
   @ApiOkResponse({
     schema: {
@@ -229,8 +230,6 @@ export class RiderController {
       },
     },
   })
-
-
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
   @Roles(Role.RIDER)
@@ -283,8 +282,6 @@ export class RiderController {
       },
     },
   })
-
-
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
   @Roles(Role.RIDER)
@@ -312,7 +309,6 @@ export class RiderController {
   ): Promise<StandardResponse<Vehicle>> {
     return await this.riderService.VehicleProfile(req.user, dto, file);
   }
-
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
@@ -342,7 +338,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Get('all-available-bids')
   @ApiOkResponse({
     schema: {
@@ -395,7 +391,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Get('one-bid/:BidID')
   @ApiOkResponse({
     schema: {
@@ -420,7 +416,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Get('all-my-involved-bids')
   @ApiOkResponse({
     schema: {
@@ -472,7 +468,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Patch('bid-action/:BidID')
   @ApiOkResponse({
     schema: {
@@ -505,7 +501,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Patch('counter-bid/:BidID')
   @ApiOkResponse({
     schema: {
@@ -534,7 +530,36 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
+  @Post('cancel-ride/:rideID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Bid>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Bid),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'cancel a ride ',
+  })
+  async Cancelride(
+    @Body() dto: CancelRideDto,
+    @Req() req,
+    @Param('rideID') rideId: string,
+  ): Promise<StandardResponse<Bid>> {
+    return await this.riderService.cancelRide(req.user, rideId, dto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+  @Roles(Role.RIDER)
   @Get('one-order/:orderID')
   @ApiOkResponse({
     schema: {
@@ -559,7 +584,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Get('all-my-accepted-orders')
   @ApiOkResponse({
     schema: {
@@ -613,7 +638,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Patch('checkpoint/enroute-to-pickupLocation/:rideID')
   @ApiOkResponse({
     schema: {
@@ -641,7 +666,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Patch('checkpoint/at-pickupLocation/:rideID')
   @ApiOkResponse({
     schema: {
@@ -668,7 +693,7 @@ export class RiderController {
   }
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Patch('checkpoint/picked-upParcel/:rideID')
   @ApiOkResponse({
     schema: {
@@ -696,7 +721,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Patch('checkpoint/enroute-to-dropOffLocation/:rideID')
   @ApiOkResponse({
     schema: {
@@ -724,7 +749,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Patch('checkpoint/at-dropOffLocation/:rideID')
   @ApiOkResponse({
     schema: {
@@ -752,7 +777,7 @@ export class RiderController {
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Patch('checkpoint/droppedOff-parcel/:rideID')
   @ApiOkResponse({
     schema: {
@@ -799,15 +824,15 @@ export class RiderController {
   })
   @ApiOperation({ summary: 'fetch one ride' })
   async FetchOneRide(
-    @Req()req,
+    @Req() req,
     @Param('rideID') orderId: string,
   ): Promise<StandardResponse<Rides>> {
-    return await this.riderService.FetchOneRide(req.user,orderId);
+    return await this.riderService.FetchOneRide(req.user, orderId);
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.RIDER)
+  @Roles(Role.RIDER)
   @Get('all-rides')
   @ApiOkResponse({
     schema: {
@@ -856,6 +881,6 @@ export class RiderController {
     @Query() dto: PaginationDto,
     @Req() req,
   ): Promise<StandardResponse<{ data: Rides[]; total: number }>> {
-    return await this.riderService.FetchAllrides(req.user,dto);
+    return await this.riderService.FetchAllrides(req.user, dto);
   }
 }

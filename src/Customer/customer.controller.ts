@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   Req,
   UploadedFile,
@@ -40,6 +41,7 @@ import { Order } from 'src/Order/Domain/order';
 import { RoleGuard } from 'src/Auth/Guard/role.guard';
 import { Roles } from 'src/Auth/Decorator/role.decorator';
 import { Role } from 'src/Enums/users.enum';
+import { CancelRideDto } from 'src/Rider/Dto/dropOff-code.dto';
 
 @ApiTags('Customer')
 @ApiBearerAuth()
@@ -365,6 +367,34 @@ export class CustomerController {
     );
   }
 
+
+
+  @ApiBearerAuth()
+  @Post('cancel-ride/:rideID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Bid>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Bid),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'cancel a ride ',
+  })
+  async Cancelride(
+    @Body() dto: CancelRideDto,
+    @Req() req,
+    @Param('rideID') rideId: string,
+  ): Promise<StandardResponse<Bid>> {
+    return await this.customerService.cancelRide(req.user, rideId, dto);
+  }
 
 
 

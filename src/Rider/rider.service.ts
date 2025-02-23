@@ -50,7 +50,7 @@ import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entit
 import { Order } from 'src/Order/Domain/order';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
 import { Rides } from './Domain/rides';
-import { DropOffCodeDto } from './Dto/dropOff-code.dto';
+import { CancelRideDto, DropOffCodeDto } from './Dto/dropOff-code.dto';
 import { RiderStatus } from 'src/Enums/users.enum';
 //import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
@@ -255,7 +255,7 @@ export class RiderService {
       const updateObject: any = {
         ...RiderWithoutAddress,
         ...dto,
-        profilePicture:profilePicture,
+        profilePicture: profilePicture,
         driversLicenceFront: driverlicencefront,
         driversLicenceBack: driverlicenceback,
         updatedAT: new Date(),
@@ -550,7 +550,7 @@ export class RiderService {
           isCancelled: false,
           cancelledAt: undefined,
           picked_up_parcelAT: undefined,
-          createdAT:new Date()
+          createdAT: new Date(),
         });
 
         // Emit WebSocket event for accepting initial bid
@@ -721,6 +721,64 @@ export class RiderService {
       return this.responseService.internalServerError(
         'Error while countering bid',
         error.message,
+      );
+    }
+  }
+
+  async cancelRide(
+    rider: RiderEntity,
+    rideId: string,
+    dto: CancelRideDto,
+  ): Promise<StandardResponse<any>> {
+    try {
+      const ride = await this.ridesRepo.findByIDRelatedtoRider(
+        rideId,
+        rider.riderID,
+      );
+      if (!ride) return this.responseService.notFound('Ride not found');
+
+      if (ride.order.paymentStatus === PaymentStatus.SUCCESFUL)
+        return this.responseService.badRequest(
+          'ride has been paid for already, so the ride cannot be cancelled, please escalate this issue with the customer support at Truckways. Thank you',
+        );
+
+      if (ride.status === RideStatus.ONGOING)
+        return this.responseService.badRequest(
+          'Ride already ongoing, sorry you cannot cancel this ride now. Thank you',
+        );
+
+      //cancel the ride
+      ride.cancelledAt = new Date();
+      ride.reason_for_cancelling_ride = dto.reason;
+      ride.order = null;
+      ride.rider = null;
+      ride.isCancelled = true;
+      ride.status = RideStatus.CANCELLED;
+
+      await this.ridesRepo.save(ride);
+
+       //push notification
+      //  this.pushNotificationService.sendPushNotification(
+      //   bid.order.customer.deviceToken,
+      //   'Ride Cancelled',
+      //   'ride cancelled by rider'
+      // )
+
+      // Create notification for the rider
+      await this.notificationsService.create({
+        message: `Ride with id ${ride.ridesID} have been cancelled by this rider for this reason: ${dto.reason}`,
+        subject: 'Ride Cancelled',
+        account: rider.riderID,
+      });
+
+      await this.responseService.success(
+        `Ride with id ${ride.ridesID} have been cancelled by this rider for this reason: ${dto.reason}`,
+        ride,
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error while cancelling ride',
       );
     }
   }
@@ -979,8 +1037,6 @@ export class RiderService {
       );
     }
   }
-
-  
 
   async dropOffParcel(
     rider: RiderEntity,

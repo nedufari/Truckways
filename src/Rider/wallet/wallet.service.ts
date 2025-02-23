@@ -59,6 +59,12 @@ export class WalletService {
       const transferAmount = order.accepted_bid * percentage.percentage;
       const transactionID = `TrkT${await this.generatorService.generateUserID()}`;
 
+      //update wallet
+      wallet.balance = Number(wallet.balance) + Number(transferAmount);
+      wallet.updatedAT = new Date();
+
+      await this.walletRepository.update(wallet.walletAddrress, wallet);
+
       const transaction = await this.transactionRepository.create({
         transactionID,
         amount: transferAmount,
@@ -76,13 +82,13 @@ export class WalletService {
       await this.transactionRepository.save(transaction);
 
       await this.notificationsService.create({
-        subject: 'Wallet Funding Initiated',
-        message: `Processing credit of ${transferAmount} to your wallet`,
+        subject: 'Wallet Initial funding Comppleted',
+        message: ` credit of ${transferAmount} to your wallet`,
         account: order.Rider.riderID,
       });
 
       return this.responseService.success(
-        'Wallet funding initiated',
+        'Wallet initial funding completed',
         transaction,
       );
     } catch (error) {
@@ -91,46 +97,46 @@ export class WalletService {
     }
   }
 
-  async processFundingSuccess(
-    reference: string,
-    verifiedAmount: number,
-  ): Promise<void> {
-    await this.transactionRepository.executeWithTransaction(
-      async (repository) => {
-        const transaction = await repository.findOne({
-          where: { reference },
-          lock: { mode: 'pessimistic_write' },
-        });
+  // async processFundingSuccess(
+  //   reference: string,
+  //   verifiedAmount: number,
+  // ): Promise<void> {
+  //   await this.transactionRepository.executeWithTransaction(
+  //     async (repository) => {
+  //       const transaction = await repository.findOne({
+  //         where: { reference },
+  //         lock: { mode: 'pessimistic_write' },
+  //       });
 
-        if (!transaction || transaction.status !== TransactionStatus.PENDING) {
-          throw new Error(`Invalid transaction for reference: ${reference}`);
-        }
+  //       if (!transaction || transaction.status !== TransactionStatus.PENDING) {
+  //         throw new Error(`Invalid transaction for reference: ${reference}`);
+  //       }
 
-        if (verifiedAmount !== transaction.amount) {
-          throw new Error(
-            `Amount mismatch: Expected ${transaction.amount}, got ${verifiedAmount}`,
-          );
-        }
+  //       if (verifiedAmount !== transaction.amount) {
+  //         throw new Error(
+  //           `Amount mismatch: Expected ${transaction.amount}, got ${verifiedAmount}`,
+  //         );
+  //       }
 
-        const wallet = await this.walletRepository.findByRiderID(
-          transaction.rider.riderID,
-        );
-        if (!wallet) throw new Error(`Wallet not found for ${reference}`);
+  //       const wallet = await this.walletRepository.findByRiderID(
+  //         transaction.rider.riderID,
+  //       );
+  //       if (!wallet) throw new Error(`Wallet not found for ${reference}`);
 
-        wallet.balance = Number(wallet.balance) + verifiedAmount;
-        await this.walletRepository.save(wallet);
+  //       wallet.balance = Number(wallet.balance) + verifiedAmount;
+  //       await this.walletRepository.save(wallet);
 
-        transaction.status = TransactionStatus.SUCCESSFUL;
-        await repository.save(transaction);
+  //       transaction.status = TransactionStatus.SUCCESSFUL;
+  //       await repository.save(transaction);
 
-        await this.notificationsService.create({
-          subject: 'Wallet Funded Successfully',
-          message: `Your wallet has been credited with ${verifiedAmount}`,
-          account: transaction.rider.riderID,
-        });
-      },
-    );
-  }
+  //       await this.notificationsService.create({
+  //         subject: 'Wallet Funded Successfully',
+  //         message: `Your wallet has been credited with ${verifiedAmount}`,
+  //         account: transaction.rider.riderID,
+  //       });
+  //     },
+  //   );
+  // }
 
   async cashout(
     rider: RiderEntity,

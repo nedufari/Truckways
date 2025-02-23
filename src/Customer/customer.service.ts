@@ -27,6 +27,7 @@ import {
   BidActionResult,
   BidStatus,
   BidTypeAccepted,
+  PaymentStatus,
   RideStatus,
 } from 'src/Enums/order.enum';
 import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
@@ -34,6 +35,7 @@ import { Order } from 'src/Order/Domain/order';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
 import { RidesRepository } from 'src/Rider/Infrastructure/Persistence/rider-repository';
 import { GeneratorService } from 'src/utils/services/generator.service';
+import { CancelRideDto } from 'src/Rider/Dto/dropOff-code.dto';
 //import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
 export class CustomerService {
@@ -553,6 +555,65 @@ export class CustomerService {
     };
 
     return actions[action]();
+  }
+
+
+
+  async cancelRide(
+    customer: CustomerEntity,
+    rideId: string,
+    dto: CancelRideDto,
+  ): Promise<StandardResponse<any>> {
+    try {
+      const ride = await this.ridesRepo.findByID(
+        rideId,
+      );
+      if (!ride) return this.responseService.notFound('Ride not found');
+
+      if (ride.order.paymentStatus === PaymentStatus.SUCCESFUL)
+        return this.responseService.badRequest(
+          'ride has been paid for already, so the ride cannot be cancelled, please escalate this issue with the customer support at Truckways. Thank you',
+        );
+
+      if (ride.status === RideStatus.ONGOING)
+        return this.responseService.badRequest(
+          'Ride already ongoing, sorry you cannot cancel this ride now. Thank you',
+        );
+
+      //cancel the ride
+      ride.cancelledAt = new Date();
+      ride.reason_for_cancelling_ride = dto.reason;
+      ride.order = null;
+      ride.rider = null;
+      ride.isCancelled = true;
+      ride.status = RideStatus.CANCELLED;
+
+      await this.ridesRepo.save(ride);
+
+      //push notification
+        //  this.pushNotificationService.sendPushNotification(
+        //   bid.rider.deviceToken,
+        //   'Ride Cancelled',
+        //   'ride cancelled by customer'
+        // )
+
+      // Create notification for the rider
+      await this.notificationsService.create({
+        message: `Ride with id ${ride.ridesID} have been cancelled by this customer for this reason: ${dto.reason}`,
+        subject: 'Ride Cancelled',
+        account: customer.customerID,
+      });
+
+      await this.responseService.success(
+        `Ride with id ${ride.ridesID} have been cancelled by this customer for this reason: ${dto.reason}`,
+        ride,
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error while cancelling ride',
+      );
+    }
   }
 
   async FetchAllMyOrders(

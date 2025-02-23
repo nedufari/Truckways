@@ -11,3 +11,11 @@ export class DropOffCodeDto {
     @IsArray()  
     itemsDroppedOff: string[];
   }
+
+export class CancelRideDto{
+  @ApiProperty({type:String, example:'no longer want this service'})
+    @IsString()
+    @IsNotEmpty()
+    reason: string;
+
+}
