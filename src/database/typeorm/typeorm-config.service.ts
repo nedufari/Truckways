@@ -16,6 +16,7 @@ import { TransactionEntity } from 'src/Rider/Infrastructure/Persistence/Relation
 import { AdminEntity } from 'src/Admin/Infrastructure/Persistence/Relational/Entity/admin.entity';
 import { RidesEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rides.entity';
 import { PercentageConfigEntity } from 'src/Admin/Infrastructure/Persistence/Relational/Entity/percentage-configuration.entity';
+import { AnnouncementEntity } from 'src/Admin/Infrastructure/Persistence/Relational/Entity/announcement.entity';
 
 @Injectable()
 export class TypeOrmConfigService implements TypeOrmOptionsFactory {
@@ -51,7 +52,8 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
         TransactionEntity,
         AdminEntity,
         RidesEntity,
-        PercentageConfigEntity
+        PercentageConfigEntity,
+        AnnouncementEntity
         
       
       ],

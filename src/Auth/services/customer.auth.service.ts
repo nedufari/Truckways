@@ -201,12 +201,7 @@ export class CustomerAuthService {
         customer: customer as CustomerEntity,
       });
 
-      // Generate and return JWT token
-      const token = await this.generatorService.signToken(
-        customer.id,
-        customer.email,
-        customer.role,
-      );
+     
 
       // Save notification
       await this.notificationService.create({
@@ -217,7 +212,7 @@ export class CustomerAuthService {
 
       return this.responseService.success(
         'email verified successfully and customer Cart created',
-        { customer: updatedCustomer, cart: cart, onboardingToken: token },
+        { customer: updatedCustomer, cart: cart },
       );
     } catch (error) {
       return this.responseService.internalServerError(

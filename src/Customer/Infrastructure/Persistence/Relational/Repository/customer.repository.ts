@@ -60,6 +60,15 @@ export class CustomerRelationalRepository implements CustomerRepository {
     return { data: wallets, total };
   }
 
+  async findCustomersForAnnouncement(): Promise<Customer[]> {
+    const result = await this.customerEntityRepository.find({
+      where: { isVerified: true },
+      select: ['email', 'customerID','deviceToken'],
+    });
+    const wallets = result.map(CustomerMapper.toDomain);
+    return wallets;
+  }
+
   async update(id: number, customer: Partial<Customer>): Promise<Customer> {
     await this.customerEntityRepository.update(
       id,

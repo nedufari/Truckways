@@ -5,6 +5,7 @@ export abstract class CustomerRepository{
     abstract create(customer:Customer):Promise<Customer>
     abstract findByID(id:number):Promise<Customer | null>
     abstract find(dto:PaginationDto):Promise<{data:Customer[], total:number}>
+    abstract findCustomersForAnnouncement():Promise<Customer[]>
     abstract findByEmail(email:string):Promise<Customer | null>
     abstract findbyPasswordResetToken (token:string):Promise <Customer|null>;
     abstract update (id:number , customer:Partial<Customer>):Promise<Customer>

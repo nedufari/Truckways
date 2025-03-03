@@ -1,5 +1,5 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { AdminRepository, PercentageConfigRepository} from '../../admin-repository';
+import { AdminRepository, AnnounceRepository, PercentageConfigRepository} from '../../admin-repository';
 import { AdminEntity } from '../Entity/admin.entity';
 import { Repository } from 'typeorm';
 import { AdminMapper } from '../Mapper/admin.mapper';
@@ -9,6 +9,10 @@ import { PercentageConfigEntity } from '../Entity/percentage-configuration.entit
 import { PercentageConfig } from 'src/Admin/Domain/percentage';
 import { PercentageConfigMapper } from '../Mapper/percentage.mapper';
 import { PercentageType } from 'src/Enums/percentage.enum';
+import { AnnouncementEntity } from '../Entity/announcement.entity';
+import { Announcement } from 'src/Admin/Domain/announcement';
+import { AnouncementMapper } from '../Mapper/announcement.mapper';
+import { AnnonuncmentTargetUser, AnnouncementMeduim } from 'src/Enums/announcement.enum';
 
 export class AdminRelationalRepository implements AdminRepository {
   constructor(
@@ -173,7 +177,7 @@ export class PercentageConfigRelationalRepository implements PercentageConfigRep
   async update(id: number, customer: Partial<PercentageConfig>): Promise<PercentageConfig> {
     await this.percentageEntityRepository.update(
       id,
-      AdminMapper.toPerisitence(customer as Admin),
+      PercentageConfigMapper.toPerisitence(customer as PercentageConfig),
     );
     const updatedCustomer = await this.percentageEntityRepository.findOne({
       where: { id: id },
@@ -196,3 +200,90 @@ export class PercentageConfigRelationalRepository implements PercentageConfigRep
   }
 
 }
+
+
+
+
+
+//announcement
+export class AnnouncenentRelationalRepository implements AnnounceRepository {
+  constructor(
+    @InjectRepository(AnnouncementEntity)
+    private announcementEntityRepository: Repository<AnnouncementEntity>,
+  ) {}
+
+
+
+  async create(customer: Announcement): Promise<Announcement> {
+    const persistenceCustomer = AnouncementMapper.toPerisitence(customer);
+    const savedCustomer =
+      await this.announcementEntityRepository.save(persistenceCustomer);
+    return AnouncementMapper.toDomain(savedCustomer);
+  }
+
+  async findByID(id: number): Promise<Announcement> {
+    const customer = await this.announcementEntityRepository.findOne({
+      where: { id: id },
+    });
+    return customer ? AnouncementMapper.toDomain(customer) : null;
+  }
+
+  async findByMedium(medium:AnnouncementMeduim): Promise<Announcement> {
+    const customer = await this.announcementEntityRepository.findOne({
+      where: { announcementMedium:medium },
+    });
+    return customer ? AnouncementMapper.toDomain(customer) : null;
+  }
+
+  async findBytargetUser(user:AnnonuncmentTargetUser): Promise<Announcement> {
+    const customer = await this.announcementEntityRepository.findOne({
+      where: { targetUser:user },
+    });
+    return customer ? AnouncementMapper.toDomain(customer) : null;
+  }
+
+
+
+  async find(dto: PaginationDto): Promise<{ data: Announcement[]; total: number }> {
+    const { page, limit, sortBy, sortOrder } = dto;
+    const [result, total] = await this.announcementEntityRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sortBy]: sortOrder },
+      
+    });
+    const wallets = result.map(AnouncementMapper.toDomain);
+    return { data: wallets, total };
+  }
+
+  async update(id: number, customer: Partial<Announcement>): Promise<Announcement> {
+    await this.announcementEntityRepository.update(
+      id,
+      AnouncementMapper.toPerisitence(customer as Announcement),
+    );
+    const updatedCustomer = await this.announcementEntityRepository.findOne({
+      where: { id: id },
+    });
+    return AnouncementMapper.toDomain(updatedCustomer);
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.announcementEntityRepository.delete(id);
+  }
+
+  async save(customer: Announcement): Promise<Announcement> {
+    const persistenceCustomer = AnouncementMapper.toPerisitence(customer);
+    const savedCustomer = await this.announcementEntityRepository.save(
+      persistenceCustomer,
+      { reload: true },
+    );
+
+    return AnouncementMapper.toDomain(savedCustomer);
+  }
+
+}
+
+
+
+
+

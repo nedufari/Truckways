@@ -16,6 +16,7 @@ import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
 import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity';
 import { RelationalPersistenceCustomerModule } from 'src/Customer/Infrastructure/Persistence/Relational/relational-persistence-customer.module';
 import { RelationalPersistenceRiderModule } from 'src/Rider/Infrastructure/Persistence/Relational/relational-persistence-rider.module';
+import { MailService } from 'src/mailer/mailer.service';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { RelationalPersistenceRiderModule } from 'src/Rider/Infrastructure/Persi
     AdminService,
     GeoLocationService,
     EventsGateway,
+    MailService
     //PushNotificationsService
   ],
   controllers: [AdminController],

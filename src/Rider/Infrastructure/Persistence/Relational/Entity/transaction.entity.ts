@@ -13,7 +13,7 @@ import { TransactionStatus, TransactionType } from 'src/Enums/transaction.enum';
 
 
 export interface TransactionMetadata {
-    type: 'wallet_funding' | 'withdrawal' | 'order_payment';
+    type: 'wallet_funding' | 'withdrawal' | 'order_payment'|'final_wallet_funding';
     orderReference?: string;
     bankDetails?: {
       accountNumber: string;

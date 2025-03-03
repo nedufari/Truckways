@@ -117,7 +117,7 @@ export class RiderAuthController {
   @ApiOkResponse({
     schema: {
       allOf: [
-        { $ref: getSchemaPath(StandardResponse<Rider>) },
+        { $ref: getSchemaPath(StandardResponse<any>) },
         {
           properties: {
             payload: {
@@ -131,7 +131,7 @@ export class RiderAuthController {
   @ApiOperation({
     summary: 'verification of the otp sent after rider successfully registers',
   })
-  async verifyOtp(@Body() dto: VerifyOtp): Promise<StandardResponse<Rider>> {
+  async verifyOtp(@Body() dto: VerifyOtp): Promise<StandardResponse<any>> {
     return await this.riderrauthService.verifyOtp(dto);
   }
 

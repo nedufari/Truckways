@@ -75,4 +75,17 @@ export class RidesEntity {
   @ApiProperty()
   @Column({ type: 'timestamp', nullable: true })
   createdAT: Date;
+
+  @ApiProperty()
+  @Column({ default: false })
+  reminderSent: boolean;
+
+  @ApiProperty({type:Number})
+  @Column({ type: 'float', nullable: true })
+  rating: number;
+
+  @ApiProperty({type:String})
+  @Column({ type: 'text', nullable: true })
+  review: string;
+
 }

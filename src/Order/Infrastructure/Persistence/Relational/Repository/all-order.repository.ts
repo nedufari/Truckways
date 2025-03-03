@@ -7,7 +7,7 @@ import {
   OrderRepository,
 } from '../../all-order-repositories';
 import { OrderEntity, OrderItemsEntity } from '../Entity/order.entity';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Order } from 'src/Order/Domain/order';
 import { OrderMapper } from '../Mapper/order.mapper';
 import { PaginationDto, SearchDto } from 'src/utils/shared-dto/pagination.dto';
@@ -36,7 +36,7 @@ export class OrderRelationalRepository implements OrderRepository {
   async findByID(id: string): Promise<Order> {
     const order = await this.orderEntityRepository.findOne({
       where: { orderID: id },
-      relations: ['customer', 'bid', 'items','Rider'],
+      relations: ['customer', 'bid', 'items', 'Rider'],
     });
     return order ? OrderMapper.toDomain(order) : null;
   }
@@ -75,7 +75,7 @@ export class OrderRelationalRepository implements OrderRepository {
   ): Promise<{ data: Order[]; total: number }> {
     const { page, limit, sortBy, sortOrder } = dto;
     const [result, total] = await this.orderEntityRepository.findAndCount({
-      where: { Rider:{riderID:riderID} },
+      where: { Rider: { riderID: riderID } },
       skip: (page - 1) * limit,
       take: limit,
       order: { [sortBy]: sortOrder },
@@ -98,8 +98,6 @@ export class OrderRelationalRepository implements OrderRepository {
     await this.orderEntityRepository.delete(id);
   }
 
-
-
   async searchOrder(
     searchDto: SearchDto,
   ): Promise<{ data: Order[]; total: number }> {
@@ -109,7 +107,6 @@ export class OrderRelationalRepository implements OrderRepository {
 
     if (keyword) {
       qb.where('order.orderID ILIKE :keyword', { keyword: `%${keyword}%` });
-     
     }
 
     // Sorting
@@ -124,6 +121,15 @@ export class OrderRelationalRepository implements OrderRepository {
     const [orders, total] = await qb.getManyAndCount();
 
     return { data: orders, total };
+  }
+
+  async trackOrder(keyword: string): Promise<Order> {
+    const order = await this.orderEntityRepository.findOne({
+      where: { trackingID: keyword },
+      relations: ['ride', 'Rider', 'Rider.vehicle'],
+    });
+
+    return order ? OrderMapper.toDomain(order) : null;
   }
 }
 
@@ -299,7 +305,7 @@ export class BidsRelationalRepository implements BidRepository {
   ): Promise<Bid | null> {
     const bid = await this.bidEntityRepository.findOne({
       where: { bidID: id, order: { customer: { customerID: customerId } } },
-      relations: ['order', 'order.customer', 'rider','rider.vehicle'],
+      relations: ['order', 'order.customer', 'rider', 'rider.vehicle'],
     });
     return bid ? BidMapper.toDomain(bid) : null;
   }
@@ -314,7 +320,7 @@ export class BidsRelationalRepository implements BidRepository {
       skip: (page - 1) * limit,
       take: limit,
       order: { [sortBy]: sortOrder },
-      relations: ['order', 'order.customer', 'rider','rider.vehicle'],
+      relations: ['order', 'order.customer', 'rider', 'rider.vehicle'],
     });
     const bids = result.map(BidMapper.toDomain);
     return { data: bids, total };
@@ -326,7 +332,7 @@ export class BidsRelationalRepository implements BidRepository {
   ): Promise<{ data: Bid[]; total: number }> {
     const { page, limit, sortBy, sortOrder } = dto;
     const [result, total] = await this.bidEntityRepository.findAndCount({
-      where: { rider:{riderID:riderId}},
+      where: { rider: { riderID: riderId } },
       skip: (page - 1) * limit,
       take: limit,
       order: { [sortBy]: sortOrder },
@@ -338,9 +344,7 @@ export class BidsRelationalRepository implements BidRepository {
 
   //return  back to this soon
 
-  async fetchALL(
-    dto: PaginationDto,
-  ): Promise<{ data: Bid[]; total: number }> {
+  async fetchALL(dto: PaginationDto): Promise<{ data: Bid[]; total: number }> {
     const { page, limit, sortBy, sortOrder } = dto;
     const [result, total] = await this.bidEntityRepository.findAndCount({
       //where: { order: { customer: { customerID: customerId } } },
@@ -372,7 +376,8 @@ export class BidsRelationalRepository implements BidRepository {
       BidMapper.toPeristence(bid as Bid),
     );
     const updatedBid = await this.bidEntityRepository.findOne({
-      where: { id: id },relations:['rider','rider.vehicle']
+      where: { id: id },
+      relations: ['rider', 'rider.vehicle'],
     });
     return BidMapper.toDomain(updatedBid);
   }
@@ -386,7 +391,6 @@ export class BidsRelationalRepository implements BidRepository {
 
     if (keyword) {
       qb.where('bid.orderID ILIKE :keyword', { keyword: `%${keyword}%` });
-     
     }
 
     // Sorting
@@ -402,5 +406,4 @@ export class BidsRelationalRepository implements BidRepository {
 
     return { data: orders, total };
   }
-
 }

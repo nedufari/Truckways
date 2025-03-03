@@ -18,6 +18,7 @@ import { GeneratorService } from 'src/utils/services/generator.service';
 import { Transactions } from '../Domain/transaction';
 import { PercentageType } from 'src/Enums/percentage.enum';
 import { OrderRepository } from 'src/Order/Infrastructure/Persistence/all-order-repositories';
+import { OrderStatus } from 'src/Enums/order.enum';
 
 @Injectable()
 export class WalletService {
@@ -97,46 +98,84 @@ export class WalletService {
     }
   }
 
-  // async processFundingSuccess(
-  //   reference: string,
-  //   verifiedAmount: number,
-  // ): Promise<void> {
-  //   await this.transactionRepository.executeWithTransaction(
-  //     async (repository) => {
-  //       const transaction = await repository.findOne({
-  //         where: { reference },
-  //         lock: { mode: 'pessimistic_write' },
-  //       });
+  async FinalFundWallet(
+    RiderId: string,
+    orderId: string,
+  ): Promise<StandardResponse<any>> {
+    try {
+      const order = await this.orderRepository.findByID(orderId);
+      if (!order) return this.responseService.notFound('order not found');
 
-  //       if (!transaction || transaction.status !== TransactionStatus.PENDING) {
-  //         throw new Error(`Invalid transaction for reference: ${reference}`);
-  //       }
+      if (order.orderStatus !== OrderStatus.COMPLETED)
+        return this.responseService.badRequest('Order is not completed');
 
-  //       if (verifiedAmount !== transaction.amount) {
-  //         throw new Error(
-  //           `Amount mismatch: Expected ${transaction.amount}, got ${verifiedAmount}`,
-  //         );
-  //       }
+      const findInitialTransaction =
+        await this.transactionRepository.findByReference(order.orderID);
+      if (!findInitialTransaction)
+        return this.responseService.notFound(
+          'initial Transaction related to this order not found',
+        );
 
-  //       const wallet = await this.walletRepository.findByRiderID(
-  //         transaction.rider.riderID,
-  //       );
-  //       if (!wallet) throw new Error(`Wallet not found for ${reference}`);
+      //check for final transaction to ensure you dont recieve money twice
+      const findFinalTransaction =
+        await this.transactionRepository.findByReferenceFinal(order.orderID);
+      if (findFinalTransaction)
+        return this.responseService.notFound(
+          'you have already been paid completely for this Ride',
+        );
 
-  //       wallet.balance = Number(wallet.balance) + verifiedAmount;
-  //       await this.walletRepository.save(wallet);
+      //retirve truckways percentage
+      const truckwaysPercentage = await this.percentageRepository.findByType(
+        PercentageType.TRUCKWYS_PERCENTAGE_FROM_A_RIDE,
+      );
+      if (!truckwaysPercentage)
+        return this.responseService.notFound('Truckways Percentage not found');
 
-  //       transaction.status = TransactionStatus.SUCCESSFUL;
-  //       await repository.save(transaction);
+      //calculate amount
+      const totlaAmount = order.accepted_bid;
+      const initialAmount = findInitialTransaction.amount;
+      const truckwaysCut = totlaAmount * truckwaysPercentage.percentage;
+      const remainingforRider = totlaAmount - initialAmount - truckwaysCut;
 
-  //       await this.notificationsService.create({
-  //         subject: 'Wallet Funded Successfully',
-  //         message: `Your wallet has been credited with ${verifiedAmount}`,
-  //         account: transaction.rider.riderID,
-  //       });
-  //     },
-  //   );
-  // }
+      if (remainingforRider <= 0)
+        return this.responseService.badRequest(
+          'no remaining balance for deduction',
+        );
+
+      //update rider's wallet
+      const wallet = await this.walletRepository.findByRiderID(RiderId);
+      if (!wallet) return this.responseService.notFound('Wallet not found');
+      wallet.balance = Number(wallet.balance) + Number(remainingforRider);
+      wallet.updatedAT = new Date();
+
+      await this.walletRepository.update(wallet.walletAddrress, wallet);
+
+      // Create final transaction for rider
+      const transactionID = `TrkT${await this.generatorService.generateUserID()}`;
+      const finalTransaction = await this.transactionRepository.create({
+        transactionID,
+        amount: remainingforRider,
+        type: TransactionType.CREDIT,
+        status: TransactionStatus.SUCCESSFUL,
+        walletAddrress: wallet.walletAddrress,
+        reference: order.orderID,
+        description: 'Final payment after Truckways deduction',
+        rider: order.Rider,
+        metadata: {
+          type: 'final_wallet_funding',
+          orderReference: order.orderID,
+        },
+        id: 0,
+        createdAT: new Date(),
+      });
+      await this.transactionRepository.save(finalTransaction);
+    } catch (error) {
+      console.error('FinalFundWallet Error:', error);
+      return this.responseService.internalServerError(
+        'Error processing final payment',
+      );
+    }
+  }
 
   async cashout(
     rider: RiderEntity,

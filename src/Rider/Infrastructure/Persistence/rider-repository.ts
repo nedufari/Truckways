@@ -13,6 +13,7 @@ export abstract class RiderRepository{
     abstract create(rider:Rider):Promise<Rider>
     abstract findByID(id:number):Promise<Rider | null>
     abstract find(dto:PaginationDto):Promise<{data:Rider[], total:number}>
+    abstract findRidersForAnnouncement():Promise<Rider[]>
     abstract findByEmail(rider:string):Promise<Rider | null>
     abstract findbyPasswordResetToken (token:string):Promise <Rider|null>;
     abstract update (id:number , rider:Partial<Rider>):Promise<Rider>
@@ -54,7 +55,8 @@ export abstract class WalletRepository{
 export abstract class TransactionRepository{
     abstract create(transaction:Transactions):Promise<Transactions>
     abstract findByID(string:string):Promise<Transactions | null>
-    abstract findByReference(string:string):Promise<Transactions | null>
+    abstract findByReference(reference:string):Promise<Transactions | null>
+    abstract findByReferenceFinal(reference:string):Promise<Transactions | null>
     abstract find(dto:PaginationDto):Promise<{data:Transactions[], total:number}>
     abstract save (transaction:Transactions):Promise<Transactions>
     abstract searchTransactions (searchdto:SearchDto):Promise<{data:Transactions[], total:number}>
@@ -69,6 +71,7 @@ export abstract class RidesRepository{
     abstract findByID(string:string):Promise<Rides | null>
     abstract findByIDRelatedtoRider(string:string, riderId:string):Promise<Rides | null>
     abstract find(dto:PaginationDto):Promise<{data:Rides[], total:number}>
+    abstract findLongRunningRides(cutOffDate:Date):Promise<Rides[]>
     abstract findAllRelatedToARider(dto:PaginationDto, riderId:string):Promise<{data:Rides[], total:number}>
     abstract save (ride:Rides):Promise<Rides>
     abstract searchRides (searchdto:SearchDto):Promise<{data:Rides[], total:number}>

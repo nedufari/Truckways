@@ -42,6 +42,8 @@ import { RoleGuard } from 'src/Auth/Guard/role.guard';
 import { Roles } from 'src/Auth/Decorator/role.decorator';
 import { Role } from 'src/Enums/users.enum';
 import { CancelRideDto } from 'src/Rider/Dto/dropOff-code.dto';
+import { Rides } from 'src/Rider/Domain/rides';
+import { RatingReviewDto } from 'src/Order/Dto/ratingReview.dto';
 
 @ApiTags('Customer')
 @ApiBearerAuth()
@@ -394,6 +396,34 @@ export class CustomerController {
     @Param('rideID') rideId: string,
   ): Promise<StandardResponse<Bid>> {
     return await this.customerService.cancelRide(req.user, rideId, dto);
+  }
+
+
+  @ApiBearerAuth()
+  @Patch('ratingReview/:rideID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Rides>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Rides),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'leave a rating and a review in a just concluded ride ',
+  })
+  async RatingReview(
+    @Body() dto: RatingReviewDto,
+    @Req() req,
+    @Param('rideID') rideId: string,
+  ): Promise<StandardResponse<Rides>> {
+    return await this.customerService.ratingAndReview(req.user, rideId, dto);
   }
 
 

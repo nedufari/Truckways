@@ -24,6 +24,8 @@ import { PaystackService } from 'src/Payment/paystack/paystack.service';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
 import { PercentageConfigRepository } from 'src/Admin/Infrastructure/Persistence/admin-repository';
 import { PercentageType } from 'src/Enums/percentage.enum';
+import { RatingReviewDto } from './Dto/ratingReview.dto';
+import { Rides } from 'src/Rider/Domain/rides';
 //import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 
 @Injectable()
@@ -366,6 +368,29 @@ export class OrderService {
       console.error(error);
       return this.responseService.internalServerError(
         'Error while initializing order Payment',
+      );
+    }
+  }
+
+  //track order
+  async TrackOrder(keyword: string): Promise<StandardResponse<Order>> {
+    try {
+      const order = await this.orderRepository.trackOrder(keyword);
+
+      if (!order)
+        return this.responseService.notFound(
+          `no trackingID was found matching keyword ${keyword}`,
+        );
+
+      return this.responseService.success(
+        `order details retrieved successfully for ${keyword}`,
+        order,
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error tracking Order',
+        error.message,
       );
     }
   }

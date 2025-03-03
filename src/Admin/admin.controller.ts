@@ -48,6 +48,8 @@ import { AppproveRiderDto, BlockRiderDto } from './Dto/approve-rider.dto';
 import { CreatePercentageDto, UpdatePercentageDto } from './Dto/percentage-config.dto';
 import { PercentageConfig } from './Domain/percentage';
 import { Rides } from 'src/Rider/Domain/rides';
+import { Announcement } from './Domain/announcement';
+import { MakeAnnouncementDto } from './Dto/announcement.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -1314,4 +1316,110 @@ export class AdminController {
   ): Promise<StandardResponse<{ data: PercentageConfig[]; total: number }>> {
     return await this.adminService.FetchAllPercentage(dto);
   }
+
+
+
+  @Post('make-Announcement')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(StandardResponse<Announcement>),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Announcement),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'make announcement',
+  })
+  async makeAnnouncement(
+    @Req() req,
+    @Body() dto: MakeAnnouncementDto,
+  ): Promise<StandardResponse<Announcement>> {
+    return await this.adminService.makeAnnouncement(req.user, dto);
+  }
+
+
+  @Get('one-announcement/:announcementID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<
+          Announcement>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Announcement),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'fetch one announcement' })
+  async FetchOneAnnouncement(
+    @Param('announcementID') orderId: number,
+  ): Promise<StandardResponse<Announcement>> {
+    return await this.adminService.FetchOneannouncement(orderId);
+  }
+
+  @Get('all-announcements')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(
+            StandardResponse<{ data: Announcement[]; total: number }>,
+          ),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Announcement),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: 'number',
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: 'number',
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: 'string',
+    description: 'Sorting field',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sorting order',
+  })
+  @ApiOperation({ summary: 'all announcement' })
+  async fetchAllAnnouncement(
+    @Query() dto: PaginationDto,
+    @Req() req,
+  ): Promise<StandardResponse<{ data: Announcement[]; total: number }>> {
+    return await this.adminService.FetchAllAnnouncements(dto);
+  }
+
+
 }

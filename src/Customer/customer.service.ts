@@ -36,6 +36,8 @@ import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
 import { RidesRepository } from 'src/Rider/Infrastructure/Persistence/rider-repository';
 import { GeneratorService } from 'src/utils/services/generator.service';
 import { CancelRideDto } from 'src/Rider/Dto/dropOff-code.dto';
+import { RatingReviewDto } from 'src/Order/Dto/ratingReview.dto';
+import { Rides } from 'src/Rider/Domain/rides';
 //import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
 export class CustomerService {
@@ -49,8 +51,8 @@ export class CustomerService {
     private cartRepository: OrderCartRepository,
     private orderRepository: OrderRepository,
     private readonly eventsGateway: EventsGateway,
-    private ridesRepo:RidesRepository,
-    private generatorService: GeneratorService
+    private ridesRepo: RidesRepository,
+    private generatorService: GeneratorService,
     //private readonly pushNotificationService:PushNotificationsService,
   ) {}
 
@@ -401,12 +403,12 @@ export class CustomerService {
 
       const action = dto.doYouAccept ? BidAction.ACCEPT : BidAction.DECLINE;
 
-      //start websocket conversation between customer and rider 
+      //start websocket conversation between customer and rider
       this.eventsGateway.startconversation(
         bid.order.orderID,
         bid.rider.riderID,
-        customer.customerID
-      )
+        customer.customerID,
+      );
 
       const result = await this.processBidAction(action, bid, customer);
 
@@ -441,41 +443,42 @@ export class CustomerService {
         order.Rider = bid.rider;
         await this.orderRepository.save(order);
 
-         //create a ride 
-         const ridesID = `TrkRd${await this.generatorService.generateUserID()}`;
-         await this.ridesRepo.create({
-           id: 0,
-           ridesID:ridesID,
-           milestone: undefined,
-           status: RideStatus.PENDING,
-           rider: bid.rider,
-           order: order,
-           checkpointStatus: undefined,
-           at_dropoff_locationAT: undefined,
-           at_pickup_locationAT: undefined,
-           enroute_to_dropoff_locationAT: undefined,
-           enroute_to_pickup_locationAT: undefined,
-           dropped_off_parcelAT: undefined,
-           reason_for_cancelling_ride: '',
-           isCancelled: false,
-           cancelledAt: undefined,
-           picked_up_parcelAT: undefined,
-           createdAT:  new Date()
-         })
- 
+        //create a ride
+        const ridesID = `TrkRd${await this.generatorService.generateUserID()}`;
+        await this.ridesRepo.create({
+          id: 0,
+          ridesID: ridesID,
+          milestone: undefined,
+          status: RideStatus.PENDING,
+          rider: bid.rider,
+          order: order,
+          checkpointStatus: undefined,
+          at_dropoff_locationAT: undefined,
+          at_pickup_locationAT: undefined,
+          enroute_to_dropoff_locationAT: undefined,
+          enroute_to_pickup_locationAT: undefined,
+          dropped_off_parcelAT: undefined,
+          reason_for_cancelling_ride: '',
+          isCancelled: false,
+          cancelledAt: undefined,
+          picked_up_parcelAT: undefined,
+          createdAT: new Date(),
+          reminderSent: false,
+          rating: 0,
+          review: '',
+        });
 
-        //emit websocket for accepted counter bid 
+        //emit websocket for accepted counter bid
         this.eventsGateway.emitToconversation(
           bid.order.orderID,
           'acceptCounterBid',
           {
-            orderId:bid.order.orderID,
-            bidStatus:true,
-            acceptedAmount:bid.counteredBid_value,
-            timestamp: new Date().getTime()
-          }
-
-        )
+            orderId: bid.order.orderID,
+            bidStatus: true,
+            acceptedAmount: bid.counteredBid_value,
+            timestamp: new Date().getTime(),
+          },
+        );
 
         await this.notificationsService.create({
           message: ` ${bid.rider.name},  has accepted a bid placed by ${bid.order.customer.name} .`,
@@ -496,8 +499,6 @@ export class CustomerService {
         //   'counter bid accepted'
         // )
 
-        
-
         return {
           success: true,
           message:
@@ -513,18 +514,16 @@ export class CustomerService {
           rider: null,
         });
 
-
-         // Emit WebSocket event for declined counter bid
-         this.eventsGateway.emitToconversation(
+        // Emit WebSocket event for declined counter bid
+        this.eventsGateway.emitToconversation(
           bid.order.orderID,
           'declineCounterBid',
           {
             orderId: bid.order.orderID,
             bidstatus: false,
             timestamp: new Date().getTime(),
-          }
+          },
         );
-
 
         await this.notificationsService.create({
           message: ` ${bid.rider.name},  has declined a bid placed by ${bid.order.customer.name}.`,
@@ -538,15 +537,13 @@ export class CustomerService {
           account: customer.customerID,
         });
 
-        
-         //push notification
+        //push notification
         //  this.pushNotificationService.sendPushNotification(
         //   bid.rider.deviceToken,
         //   'Bid Declined',
         //   'counter bid declined'
         // )
 
-      
         return {
           success: true,
           message: 'Bid declined successfully, please see other offers',
@@ -557,17 +554,13 @@ export class CustomerService {
     return actions[action]();
   }
 
-
-
   async cancelRide(
     customer: CustomerEntity,
     rideId: string,
     dto: CancelRideDto,
   ): Promise<StandardResponse<any>> {
     try {
-      const ride = await this.ridesRepo.findByID(
-        rideId,
-      );
+      const ride = await this.ridesRepo.findByID(rideId);
       if (!ride) return this.responseService.notFound('Ride not found');
 
       if (ride.order.paymentStatus === PaymentStatus.SUCCESFUL)
@@ -591,11 +584,11 @@ export class CustomerService {
       await this.ridesRepo.save(ride);
 
       //push notification
-        //  this.pushNotificationService.sendPushNotification(
-        //   bid.rider.deviceToken,
-        //   'Ride Cancelled',
-        //   'ride cancelled by customer'
-        // )
+      //  this.pushNotificationService.sendPushNotification(
+      //   bid.rider.deviceToken,
+      //   'Ride Cancelled',
+      //   'ride cancelled by customer'
+      // )
 
       // Create notification for the rider
       await this.notificationsService.create({
@@ -612,6 +605,36 @@ export class CustomerService {
       console.error(error);
       return this.responseService.internalServerError(
         'Error while cancelling ride',
+      );
+    }
+  }
+
+  //review and rating for rides
+  async ratingAndReview(
+    customer: CustomerEntity,
+    ridesID: string,
+    dto: RatingReviewDto,
+  ): Promise<StandardResponse<Rides>> {
+    try {
+      const ride = await this.ridesRepo.findByID(ridesID);
+      if (!ride) return this.responseService.notFound('ride not found');
+
+      ride.rating = dto.rating;
+      ride.review = dto.review;
+
+      await this.ridesRepo.save(ride);
+
+      // Create notification for the rider
+      await this.notificationsService.create({
+        message: `${customer.name} left a review and rating  for this concluded ride ${ride.ridesID} by ${ride.rider.name}`,
+        subject: 'Ride Rating and Review',
+        account: customer.customerID,
+      });
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error rating and revieing a concluded ride',
+        error.message,
       );
     }
   }
@@ -645,13 +668,9 @@ export class CustomerService {
     }
   }
 
-  async FetchOneOrder(
-    orderID: string,
-  ): Promise<StandardResponse<Order>> {
+  async FetchOneOrder(orderID: string): Promise<StandardResponse<Order>> {
     try {
-      const order = await this.orderRepository.findByID(
-        orderID,
-      );
+      const order = await this.orderRepository.findByID(orderID);
       if (!order) return this.responseService.notFound('Order not found');
 
       return this.responseService.success(

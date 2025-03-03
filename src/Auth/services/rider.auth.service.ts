@@ -87,7 +87,7 @@ export class RiderAuthService {
 
       //create and save otp
       const otpCode = await this.generatorService.generateEmailToken();
-      console.log(otpCode)
+      console.log(otpCode);
       let now = new Date();
 
       const twominutelater = new Date(now.getTime() + 120000);
@@ -103,7 +103,7 @@ export class RiderAuthService {
         }),
       );
       //send email first before saving the user incase of any problem
-     await this.mailService.VerifyOtpMail(email, otpCode);
+      await this.mailService.VerifyOtpMail(email, otpCode);
 
       const user = await this.riderRepository.create({
         email: email,
@@ -162,7 +162,7 @@ export class RiderAuthService {
   }
 
   // verify otp
-  async verifyOtp(dto: VerifyOtp): Promise<StandardResponse<Rider>> {
+  async verifyOtp(dto: VerifyOtp): Promise<StandardResponse<any>> {
     try {
       const isOtp = await this.otpRepository.findOne({
         where: {
@@ -192,7 +192,12 @@ export class RiderAuthService {
 
       await this.riderRepository.save(rider);
 
-      //await this.mailService.WelcomeMail(rider.email, rider.name);
+      // Generate and return JWT token
+      const token = await this.generatorService.signToken(
+        rider.id,
+        rider.email,
+        rider.role,
+      );
 
       //save notification
       await this.notificationService.create({
@@ -201,7 +206,10 @@ export class RiderAuthService {
         account: rider.riderID,
       });
 
-      return this.responseService.success('email verified successfully', rider);
+      return this.responseService.success('email verified successfully', {
+        rider: rider,
+        onboardingToken: token,
+      });
     } catch (error) {
       return this.responseService.internalServerError(
         'Error verifying email',

@@ -78,4 +78,16 @@ export class Rides {
   @ApiProperty()
   @IsDate()
   createdAT: Date;
+
+  @ApiProperty()
+  @IsBoolean()
+  reminderSent: boolean;
+
+  @ApiProperty({type:Number})
+  @IsNumber()
+  rating: number;
+
+  @ApiProperty({type:String})
+  @IsString()
+  review: string;
 }

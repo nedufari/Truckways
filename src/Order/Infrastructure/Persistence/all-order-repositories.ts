@@ -13,6 +13,7 @@ export abstract class OrderRepository {
   abstract remove(id: string): Promise<void>;
   abstract save(order: Order): Promise<Order>;
   abstract searchOrder (searchdto:SearchDto):Promise<{data:Order[], total:number}>
+  abstract trackOrder (keyword:string):Promise<Order>
 }
 
 export abstract class OrderCartRepository {

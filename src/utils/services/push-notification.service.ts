@@ -9,6 +9,8 @@
 // import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity';
 // import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
 
+import { ServiceUnavailableException } from "@nestjs/common";
+
 // // Initialize Firebase Admin SDK
 // admin.initializeApp({
 //   credential: admin.credential.cert({
@@ -144,6 +146,66 @@
 //     } catch (error) {
 //       console.error('Failed to notify riders of new order:', error);
 //       // Don't throw here to prevent order creation from failing
+//     }
+//   }
+
+
+// async sendNotificationToTargetUsers(
+//     tokens: string[],
+//     title: string,
+//     body: string,
+//     data?: any,
+//   ): Promise<{ successful: number; failed: number }> {
+//     try {
+//       if (tokens.length === 0) {
+//         console.log('No valid FCM device tokens provided');
+//         return { successful: 0, failed: 0 };
+//       }
+
+//       // Prepare the message for multiple recipients
+//       const message = {
+//         notification: {
+//           title,
+//           body,
+//         },
+//         data,
+//         tokens
+//       };
+
+//       try {
+//         // Send to multiple devices
+//         const response = await admin.messaging().sendEachForMulticast(message);
+        
+//         console.log('Multicast messages sent:', {
+//           successful: response.successCount,
+//           failed: response.failureCount
+//         });
+
+//         // Handle failed tokens if necessary
+//         if (response.failureCount > 0) {
+//           const failedTokens = [];
+//           response.responses.forEach((resp, idx) => {
+//             if (!resp.success) {
+//               failedTokens.push({
+//                 token: tokens[idx],
+//                 error: resp.error
+//               });
+//             }
+//           });
+//           console.log('Failed tokens:', failedTokens);
+//         }
+
+//         return {
+//           successful: response.successCount,
+//           failed: response.failureCount
+//         };
+//       } catch (error) {
+//         console.error('Error sending multicast messages:', error);
+//         throw new ServiceUnavailableException(error);
+//       }
+//     } catch (error) {
+//       console.error('Error in sendNotificationToTargetUsers:', error);
+//       throw new ServiceUnavailableException(error);
 //     }
 //   }
 // }

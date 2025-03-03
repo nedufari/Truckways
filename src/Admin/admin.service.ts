@@ -4,6 +4,7 @@ import {
 } from 'src/utils/services/response.service';
 import {
   AdminRepository,
+  AnnounceRepository,
   PercentageConfigRepository,
 } from './Infrastructure/Persistence/admin-repository';
 import { CloudinaryService } from 'src/utils/services/cloudinary.service';
@@ -53,6 +54,14 @@ import {
 } from './Dto/percentage-config.dto';
 import { PercentageConfig } from './Domain/percentage';
 import { Rides } from 'src/Rider/Domain/rides';
+import { MakeAnnouncementDto } from './Dto/announcement.dto';
+import { Announcement } from './Domain/announcement';
+import {
+  AnnonuncmentTargetUser,
+  AnnouncementMeduim,
+} from 'src/Enums/announcement.enum';
+import { MailService } from 'src/mailer/mailer.service';
+import { title } from 'process';
 
 //import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
@@ -72,8 +81,10 @@ export class AdminService {
     private bidRepository: BidRepository,
     private walletRipo: WalletRepository,
     private percentageRepo: PercentageConfigRepository,
-    private ridesRepository:RidesRepository,
+    private ridesRepository: RidesRepository,
+    private announcemementRepository: AnnounceRepository,
     private genefratorService: GeneratorService,
+    private mailService: MailService,
     private readonly eventsGateway: EventsGateway,
 
     //private readonly pushNotificationService:PushNotificationsService,
@@ -579,7 +590,6 @@ export class AdminService {
     }
   }
 
-
   async FetchAllrides(
     dto: PaginationDto,
   ): Promise<StandardResponse<{ data: Rides[]; total: number }>> {
@@ -587,9 +597,7 @@ export class AdminService {
       const { data: rides, total } = await this.ridesRepository.find(dto);
 
       return this.responseService.success(
-        rides.length
-          ? 'Rides retrived successfully'
-          : 'No rides yet',
+        rides.length ? 'Rides retrived successfully' : 'No rides yet',
         {
           data: rides,
           total,
@@ -606,9 +614,7 @@ export class AdminService {
     }
   }
 
-  async FetchOneRide(
-    orderID: string,
-  ): Promise<StandardResponse<Rides>> {
+  async FetchOneRide(orderID: string): Promise<StandardResponse<Rides>> {
     try {
       const order = await this.ridesRepository.findByID(orderID);
       if (!order) return this.responseService.notFound('ride not found');
@@ -783,7 +789,6 @@ export class AdminService {
     }
   }
 
-
   async searchRides(
     searchDto: SearchDto,
   ): Promise<StandardResponse<{ data: Rides[]; total: number }>> {
@@ -869,11 +874,11 @@ export class AdminService {
     try {
       const rider = await this.riderRepo.findByID(riderID);
       if (!rider) return this.responseService.notFound('rider not found');
-  
+
       // Update the blocked status based on dto.block value
       rider.isBlocked = dto.block;
       const updatedRider = await this.riderRepo.save(rider);
-  
+
       // Prepare notification message based on block status
       const action = dto.block ? 'blocked' : 'unblocked';
       await this.notificationsService.create({
@@ -881,7 +886,7 @@ export class AdminService {
         subject: `Rider ${action.charAt(0).toUpperCase() + action.slice(1)}`,
         account: updatedRider.riderID,
       });
-  
+
       return this.responseService.success(
         `rider account ${action} successfully`,
         updatedRider,
@@ -1018,4 +1023,205 @@ export class AdminService {
       );
     }
   }
+
+  async makeAnnouncement(
+    admin: AdminEntity,
+    dto: MakeAnnouncementDto,
+  ): Promise<StandardResponse<Announcement>> {
+    try {
+      let usertype = dto.targetUser;
+      let result: { successful: number; failed: number } = {
+        successful: 0,
+        failed: 0,
+      };
+
+      if (dto.announcementMedium === AnnouncementMeduim.EMAIL) {
+        if (usertype === AnnonuncmentTargetUser.CUSTOMERS) {
+          const customers =
+            await this.customerRepo.findCustomersForAnnouncement();
+          const emails = customers
+            .map((customer) => customer.email)
+            .filter(Boolean);
+
+          if (emails.length === 0)
+            return this.responseService.badRequest(
+              'No comfirmed customer emails found',
+              null,
+            );
+          result = await this.mailService.sendAnnouncementEmail(
+            emails,
+            dto.title,
+            dto.body,
+          );
+        } else if (usertype === AnnonuncmentTargetUser.RIDERS) {
+          const riders = await this.riderRepo.findRidersForAnnouncement();
+          const emails = riders.map((rider) => rider.email).filter(Boolean);
+
+          if (emails.length === 0)
+            return this.responseService.badRequest(
+              'No approved rider emails found',
+              null,
+            );
+          result = await this.mailService.sendAnnouncementEmail(
+            emails,
+            dto.title,
+            dto.body,
+          );
+        }
+        //handle it here
+      } else if (
+        dto.announcementMedium === AnnouncementMeduim.PUSH_NOTIFICATION
+      ) {
+        if (usertype === AnnonuncmentTargetUser.CUSTOMERS) {
+          const customers =
+            await this.customerRepo.findCustomersForAnnouncement();
+          const tokens = customers
+            .map((customer) => customer.deviceToken)
+            .filter(Boolean);
+
+          if (tokens.length === 0)
+            return this.responseService.badRequest(
+              'no customer deviceToken found',
+            );
+
+          //prepare data for the notification
+          const data = {
+            type: 'announcement',
+            targetUser: AnnonuncmentTargetUser.CUSTOMERS,
+            timestamp: new Date().toISOString(),
+          };
+
+          //create and send message using multicats
+          const message = {
+            notification: {
+              title: dto.title,
+              body: dto.body,
+            },
+            data,
+            tokens,
+          };
+
+          // result = await this.pushNotificationsService.sendNotificationToTargetUsers(
+          //   tokens,
+          //   dto.title,
+          //   dto.body,
+          //   data
+          // );
+        } else if (usertype === AnnonuncmentTargetUser.RIDERS) {
+          const riders = await this.riderRepo.findRidersForAnnouncement();
+          const tokens = riders
+            .map((rider) => rider.deviceToken)
+            .filter(Boolean);
+
+          if (tokens.length === 0)
+            return this.responseService.badRequest(
+              'no riders deviceToken found',
+            );
+
+          //prepare data for the notification
+          const data = {
+            type: 'announcement',
+            targetUser: AnnonuncmentTargetUser.RIDERS,
+            timestamp: new Date().toISOString(),
+          };
+
+          //create and send message using multicats
+          const message = {
+            notification: {
+              title: dto.title,
+              body: dto.body,
+            },
+            data,
+            tokens,
+          };
+
+          // result = await this.pushNotificationsService.sendNotificationToTargetUsers(
+          //   tokens,
+          //   dto.title,
+          //   dto.body,
+          //   data
+          // );
+        }
+      }
+
+      //create new config
+      const newAnnouncement = await this.announcemementRepository.create({
+        id: 0,
+        announcementMedium: dto.announcementMedium,
+        targetUser: dto.targetUser,
+        createdAT: new Date(),
+        updatedAT: undefined,
+        title: dto.title,
+        body: dto.body,
+      });
+
+      // Save notification
+      await this.notificationsService.create({
+        message: `${admin.name} has made an announcement to all ${dto.targetUser} via ${dto.announcementMedium}.`,
+        subject: 'Announcememnt From Truckways',
+        account: admin.adminID,
+      });
+
+      return this.responseService.success(
+        `${admin.name} has made an announcement to all ${dto.targetUser} via ${dto.announcementMedium} successfully. ${result.successful} sent, ${result.failed} failed.`,
+        newAnnouncement,
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error making announcement',
+        error.message,
+      );
+    }
+  }
+
+
+  async FetchAllAnnouncements(
+    dto: PaginationDto,
+  ): Promise<StandardResponse<{ data: Announcement[]; total: number }>> {
+    try {
+      const { data: orders, total } = await this.announcemementRepository.find(dto);
+
+      return this.responseService.success(
+        orders.length
+          ? 'Announcements retrived successfully'
+          : 'No announcements  yet',
+        {
+          data: orders,
+          total,
+          currentPage: dto.page,
+          pageSize: dto.limit,
+        },
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error fetching announcements',
+        error.message,
+      );
+    }
+  }
+
+  async FetchOneannouncement(
+    announcementID: number,
+  ): Promise<StandardResponse<Announcement>> {
+    try {
+      const order = await this.announcemementRepository.findByID(announcementID);
+      if (!order)
+        return this.responseService.notFound(
+          'announcement not found ',
+        );
+
+      return this.responseService.success(
+        'single announcement  retrieved successfully',
+        order,
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error fetching one announcement ',
+        error.message,
+      );
+    }
+  }
+
 }

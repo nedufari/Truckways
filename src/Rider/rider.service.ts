@@ -52,6 +52,7 @@ import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
 import { Rides } from './Domain/rides';
 import { CancelRideDto, DropOffCodeDto } from './Dto/dropOff-code.dto';
 import { RiderStatus } from 'src/Enums/users.enum';
+import { WalletService } from './wallet/wallet.service';
 //import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
 export class RiderService {
@@ -70,6 +71,7 @@ export class RiderService {
     private bidRepository: BidRepository,
     private readonly eventsGateway: EventsGateway,
     private ridesRepo: RidesRepository,
+    private walletService:WalletService
     //private readonly pushNotificationService:PushNotificationsService
   ) {}
 
@@ -551,6 +553,9 @@ export class RiderService {
           cancelledAt: undefined,
           picked_up_parcelAT: undefined,
           createdAT: new Date(),
+          reminderSent:false,
+          review:'',
+          rating:0
         });
 
         // Emit WebSocket event for accepting initial bid
@@ -757,7 +762,7 @@ export class RiderService {
 
       await this.ridesRepo.save(ride);
 
-       //push notification
+      //push notification
       //  this.pushNotificationService.sendPushNotification(
       //   bid.order.customer.deviceToken,
       //   'Ride Cancelled',
@@ -1102,6 +1107,13 @@ export class RiderService {
 
       await this.ridesRepo.save(rides);
       await this.orderRepository.save(order);
+
+      // Trigger final wallet funding after ride completion
+      try {
+        await this.walletService.FinalFundWallet(rider.riderID, order.orderID);
+      } catch (error) {
+        console.error('Error processing final payment:', error);
+      }
 
       // Notification
       try {

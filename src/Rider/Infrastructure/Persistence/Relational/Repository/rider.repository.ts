@@ -7,7 +7,7 @@ import {
   VehicleRepository,
   WalletRepository,
 } from '../../rider-repository';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, LessThan, Repository } from 'typeorm';
 import { RiderMapper } from '../Mapper/rider.mapper';
 import { RiderEntity } from '../Entity/rider.entity';
 import { Rider } from 'src/Rider/Domain/rider';
@@ -27,6 +27,7 @@ import { TransactionEntity } from '../Entity/transaction.entity';
 import { Rides } from 'src/Rider/Domain/rides';
 import { RidesMapper } from '../Mapper/rides.mapper';
 import { RidesEntity } from '../Entity/rides.entity';
+import { RideStatus } from 'src/Enums/order.enum';
 
 export class RiderRelationalRepository implements RiderRepository {
   constructor(
@@ -79,6 +80,15 @@ export class RiderRelationalRepository implements RiderRepository {
     });
     const riders = result.map(RiderMapper.toDomain);
     return { data: riders, total };
+  }
+
+  async findRidersForAnnouncement(): Promise<Rider[]> {
+    const result = await this.riderEntityRepository.find({
+      where: { isAprroved:true },
+      select: ['email', 'riderID','deviceToken'],
+    });
+    const wallets = result.map(RiderMapper.toDomain);
+    return wallets;
   }
 
   async update(id: number, rider: Partial<Rider>): Promise<Rider> {
@@ -262,6 +272,9 @@ export class BankRelationalRepository implements BankRepository {
     return { data: banks, total };
   }
 
+
+
+
   async update(id: string, bank: Partial<Bank>): Promise<Bank> {
     await this.bankEntityRepository.update(
       id,
@@ -379,7 +392,14 @@ export class TransactionRelationalRepository implements TransactionRepository {
 
   async findByReference(reference: string): Promise<Transactions> {
     const transaction = await this.repository.findOne({
-      where: { reference: reference },
+      where: { reference: reference , metadata:{type:'wallet_funding'}},
+    });
+    return transaction ? TransactionMapper.toDomain(transaction) : null;
+  }
+
+  async findByReferenceFinal(reference: string): Promise<Transactions> {
+    const transaction = await this.repository.findOne({
+      where: { reference: reference , metadata:{type:'final_wallet_funding'}},
     });
     return transaction ? TransactionMapper.toDomain(transaction) : null;
   }
@@ -505,6 +525,17 @@ export class TransactionRelationalRepository implements TransactionRepository {
       );
       const wallets = result.map(RidesMapper.toDomain);
       return { data: wallets, total };
+    }
+
+    async findLongRunningRides(cutoffDate: Date): Promise<Rides[]> {
+      return this.ridesEntityRepository.find({
+        where: {
+          status: RideStatus.ONGOING,
+          createdAT: LessThan(cutoffDate),
+          reminderSent: false
+        },
+        relations: ['rider', 'order']
+      });
     }
   
     async save(transaction: Rides): Promise<Rides> {

@@ -18,6 +18,7 @@ import { EventsGateway } from './utils/gateway/websocket.gateway';
 
 import { WalletService } from './Rider/wallet/wallet.service';
 import { AdminModule } from './Admin/admin.module';
+import { JobsModule } from './jobs/jobs.module';
 
 
 @Module({
@@ -31,7 +32,8 @@ import { AdminModule } from './Admin/admin.module';
     RiderModule,
     OrderModule,
     PaystackModule,
-    AdminModule
+    AdminModule,
+    JobsModule
    
   ],
   controllers: [AppController],

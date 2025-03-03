@@ -22,6 +22,9 @@ export class RidesMapper{
     domainEntity.order = raw.order;
     domainEntity.ridesID = raw.ridesID;
     domainEntity.createdAT = raw.createdAT;
+    domainEntity.reminderSent = raw.reminderSent;
+    domainEntity.rating = raw.rating;
+    domainEntity.review = raw.review
  
 
     return domainEntity;
@@ -49,6 +52,9 @@ export class RidesMapper{
     persistenceEntity.milestone = domainEntity.milestone;
     persistenceEntity.ridesID = domainEntity.ridesID;
     persistenceEntity.createdAT = domainEntity.createdAT;
+    persistenceEntity.reminderSent = domainEntity.reminderSent
+    persistenceEntity.rating = domainEntity.rating;
+    persistenceEntity.review = domainEntity.review
     
    
     return persistenceEntity;

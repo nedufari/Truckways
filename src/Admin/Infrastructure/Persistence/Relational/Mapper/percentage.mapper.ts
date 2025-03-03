@@ -1,6 +1,4 @@
-import { Customer } from 'src/Customer/Domain/customer';
-import { AdminEntity } from '../Entity/admin.entity';
-import { Admin } from 'src/Admin/Domain/admin';
+
 import { PercentageConfigEntity } from '../Entity/percentage-configuration.entity';
 import { PercentageConfig } from 'src/Admin/Domain/percentage';
 
