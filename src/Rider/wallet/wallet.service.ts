@@ -11,7 +11,7 @@ import {
   ResponseService,
   StandardResponse,
 } from 'src/utils/services/response.service';
-import { CashoutDto } from './dto/cashout.dto';
+import { CashoutDto, FinalizeWithdrawalDto } from './dto/cashout.dto';
 import { PaystackService } from 'src/Payment/paystack/paystack.service';
 import { PercentageConfigRepository } from 'src/Admin/Infrastructure/Persistence/admin-repository';
 import { GeneratorService } from 'src/utils/services/generator.service';
@@ -199,7 +199,7 @@ export class WalletService {
               accountName: dto.accountName,
             });
 
-          if (!recipientResponse.data.recipient_code) {
+          if (!recipientResponse.data.data.recipient_code) {
             return this.responseService.badRequest(
               'Failed to create transfer recipient',
             );
@@ -207,7 +207,7 @@ export class WalletService {
 
           const transferResponse = await this.paystackService.initiateTransfer({
             amount: dto.amount,
-            recipientCode: recipientResponse.data.recipient_code,
+            recipientCode: recipientResponse.data.data.recipient_code,
             reference: `CT-${await this.generatorService.generateUserID()}`,
           });
 
@@ -254,6 +254,48 @@ export class WalletService {
           console.error('Cashout Error:', error);
           return this.responseService.internalServerError(
             'Withdrawal processing failed',
+          );
+        }
+      },
+    );
+  }
+
+
+  async finalizeWithdrawal(
+    dto: FinalizeWithdrawalDto,
+  ): Promise<StandardResponse<any>> {
+    return this.transactionRepository.executeWithTransaction(
+      async (repository) => {
+        try {
+          // Call the finalize transfer endpoint in your Paystack service.
+          const finalizeResponse = await this.paystackService.finalizeTransfer(
+            dto.transferCode,
+            dto.otp,
+          );
+
+          // Check the response from finalizeTransfer.
+          if (!finalizeResponse.data.status) {
+            return this.responseService.badRequest(
+              'Transfer finalization failed',
+              finalizeResponse.data,
+            );
+          }
+
+          // finalizeResponse.data.data.reference holds the transaction reference
+          const reference = finalizeResponse.data.data.reference;
+
+          // Call your processWithdrawalSuccess method to update wallet, transaction status, etc.
+          await this.processWithdrawalSuccess(reference);
+
+          return this.responseService.success(
+            'Withdrawal finalized and processed successfully',
+            finalizeResponse.data,
+          );
+        } catch (error) {
+          console.error('Error finalizing withdrawal:', error);
+          return this.responseService.internalServerError(
+            'Withdrawal finalization failed',
+            error.message,
           );
         }
       },

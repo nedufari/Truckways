@@ -14,7 +14,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
 import { WalletEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/wallet.entity';
 
-
 interface TransferRecipientParams {
   accountNumber: string;
   bankCode: string;
@@ -26,7 +25,6 @@ interface TransferParams {
   recipientCode: string;
   reference: string;
 }
-
 
 @Injectable()
 export class PaystackService {
@@ -68,10 +66,6 @@ export class PaystackService {
     return response;
   };
 
-
-
-
-
   public TransferToWallet = async (
     amount: number,
     customer: PaystackCustomer,
@@ -96,33 +90,113 @@ export class PaystackService {
 
     return response;
   };
-
   async createTransferRecipient(details: TransferRecipientParams) {
-    return this.customAxiosService.post<any>(`${this._config.baseUrl}/transferrecipient`, {
-      type: 'nuban',
-      name: details.accountName,
-      account_number: details.accountNumber,
-      bank_code: details.bankCode,
-      currency: 'NGN'
-    });
+    try {
+      // Explicitly set headers for each request
+      this._axiosService.init({
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this._config.secretKey}`,
+      });
+
+      const response = await this._axiosService.post<any>(
+        `${this._config.baseUrl}/transferrecipient`,
+        {
+          type: 'nuban',
+          name: details.accountName,
+          account_number: details.accountNumber,
+          bank_code: details.bankCode,
+          currency: 'NGN',
+        },
+      );
+
+      if (!response.data.status) {
+        throw new Error('Transfer failed: ' + JSON.stringify(response.data));
+      }
+
+      return response;
+
+      // Rest of the code remains the same
+    } catch (error) {
+      throw new Error(`Transfer recipient creation failed: ${error.message}`);
+    }
   }
 
   async initiateTransfer(params: TransferParams) {
-    return this.customAxiosService.post<any>(`${this._config.baseUrl}/transfer`, {
-      source: 'balance',
-      amount: params.amount * 100,
-      recipient: params.recipientCode,
-      reference: params.reference,
-      reason: 'Wallet withdrawal'
-    });
+    try {
+      this._axiosService.init({
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this._config.secretKey}`,
+      });
+
+      const response = await this._axiosService.post<any>(
+        `${this._config.baseUrl}/transfer`,
+        {
+          source: 'balance',
+          amount: params.amount * 100,
+          recipient: params.recipientCode,
+          reference: params.reference,
+          reason: 'Wallet withdrawal',
+        },
+      );
+
+      // Add validation
+      if (!response.data.status) {
+        throw new Error('Transfer failed: ' + JSON.stringify(response.data));
+      }
+
+      return response;
+    } catch (error) {
+      throw new Error(`Transfer initiation failed: ${error.message}`);
+    }
   }
 
+  async finalizeTransfer(transferCode: string, otp: string) {
+    try {
+      this._axiosService.init({
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this._config.secretKey}`,
+      });
 
-  public verifyTransaction = async (reference: string) => {
-    const response = await this._axiosService.get<
-      PayStaackStandardResponse<VerifyTransactionResponse>
-    >(`${this._config.baseUrl}/transaction/verify/${reference}`);
+      const response = await this._axiosService.post<any>(
+        `${this._config.baseUrl}/transfer/finalize_transfer`,
+        {
+          transfer_code: transferCode,
+          otp: otp,
+        },
+      );
 
-    return response;
+      if (!response.data.status) {
+        throw new Error(
+          'Finalizing transfer failed: ' + JSON.stringify(response.data),
+        );
+      }
+
+      return response;
+    } catch (error) {
+      throw new Error(`Finalizing transfer failed: ${error.message}`);
+    }
+  }
+
+  public verifyTransfer = async (reference: string) => {
+    try {
+      this._axiosService.init({
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this._config.secretKey}`,
+      });
+
+      const response = await this._axiosService.get<any>(
+        `${this._config.baseUrl}/transfer/verify/${reference}`,
+      );
+
+      if (!response.data.status) {
+        throw new Error(
+          'Verifying  transfer failed: ' + JSON.stringify(response.data),
+        );
+      }
+
+      return response;
+    } catch (error) {
+      throw new Error(`Verifying transaction  failed: ${error.message}`);
+    }
   };
 }

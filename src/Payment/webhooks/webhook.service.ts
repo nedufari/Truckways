@@ -80,10 +80,10 @@ export class PaystackWebhookService {
   }
 
   private async handleOrderPayment(data: PaystackEventData['data']) {
-    const verification = await this.paystackService.verifyTransaction(data.reference);
-    if (!verification.data.status) {
-      throw new Error('Payment verification failed');
-    }
+    // const verification = await this.paystackService.verifyTransaction(data.reference);
+    // if (!verification.data.status) {
+    //   throw new Error('Payment verification failed');
+    // }
 
     const order = await this.orderRepository.findByID(data.reference);
     if (!order) {

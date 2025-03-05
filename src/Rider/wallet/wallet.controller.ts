@@ -5,21 +5,22 @@ import { JwtGuard } from 'src/Auth/Guard/jwt.guard';
 import { RoleGuard } from 'src/Auth/Guard/role.guard';
 import { Role } from 'src/Enums/users.enum';
 import { WalletService } from './wallet.service';
-import { CashoutDto } from './dto/cashout.dto';
+import { CashoutDto, FinalizeWithdrawalDto } from './dto/cashout.dto';
 import { Transactions } from 'src/Rider/Domain/transaction';
 import { StandardResponse } from 'src/utils/services/response.service';
+import { Wallet } from '../Domain/wallet';
 
 @ApiTags('Wallet')
 @ApiBearerAuth()
 @UseGuards(JwtGuard,RoleGuard)
+@Roles(Role.RIDER)
 @Controller({
   path: 'wallet/',
-  version: '1',
 })
 export class WalletController {
   constructor(private readonly walletService: WalletService) {}
 
-  @Roles(Role.RIDER)
+  
   @Post('initialize-cashout')
   @ApiOkResponse({
     schema: {
@@ -43,9 +44,7 @@ export class WalletController {
     return await this.walletService.cashout(req.user, dto);
   }
 
-
-  @Roles(Role.ADMIN)
-  @Post('transfer-to-wallet/:riderID/:orderID')
+  @Post('finalizeWithdrawl')
   @ApiOkResponse({
     schema: {
       allOf: [
@@ -53,18 +52,21 @@ export class WalletController {
         {
           properties: {
             payload: {
-              $ref: getSchemaPath(Transactions),
+              //$ref: getSchemaPath(Wallet),
             },
           },
         },
       ],
     },
   })
-  @ApiOperation({ summary: 'initialize fun transfer from admin to rider' })
-  async Fundwallet(
-    @Param('riderID') riderId:string,
-    @Param('orderID') orderID: string,
+  @ApiOperation({
+    summary:
+      ' finalize the withdrawal by inputing the otp and the transfer code',
+  })
+  async finalizeWithdrawal(
+    @Req() req,
+    @Body() dto: FinalizeWithdrawalDto,
   ): Promise<StandardResponse<any>> {
-    return await this.walletService.FundWallet(riderId,orderID);
+    return await this.walletService.finalizeWithdrawal(dto);
   }
 }
