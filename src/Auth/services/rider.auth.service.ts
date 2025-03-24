@@ -287,7 +287,7 @@ export class RiderAuthService {
       expirationTime.setHours(expirationTime.getHours() + 1);
       rider.resetPasswordToken = resetOtp;
       rider.resetPasswordTokenExpTime = expirationTime;
-      await this.riderRepository.update(rider.id, rider);
+      await this.riderRepository.save(rider);
 
       await this.notificationService.create({
         message: `Hi ${rider.name}, password reset otp sent.`,
