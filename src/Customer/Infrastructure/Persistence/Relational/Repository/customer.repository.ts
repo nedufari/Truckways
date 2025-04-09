@@ -54,7 +54,7 @@ export class CustomerRelationalRepository implements CustomerRepository {
       skip: (page - 1) * limit,
       take: limit,
       order: { [sortBy]: sortOrder },
-      relations: ['owner'],
+      relations: ['my_orders'],
     });
     const wallets = result.map(CustomerMapper.toDomain);
     return { data: wallets, total };
