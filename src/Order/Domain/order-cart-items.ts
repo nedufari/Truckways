@@ -30,6 +30,10 @@ export class CartItem {
 
   @ApiProperty({ type: String })
   @IsString()
+  load_description: string;
+
+  @ApiProperty({ type: String })
+  @IsString()
   pickup_address: string;
 
   @ApiProperty({ type: String })
@@ -74,9 +78,14 @@ export class Ordertem {
   @IsString()
   load_type: string;
 
+
   @ApiProperty({ type: String })
   @IsString()
   truck_type: string;
+
+  @ApiProperty({ type: String })
+  @IsString()
+  load_description: string;
 
   @ApiProperty({ type: String })
   @IsString()

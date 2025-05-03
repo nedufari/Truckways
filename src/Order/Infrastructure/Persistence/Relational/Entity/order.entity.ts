@@ -98,6 +98,10 @@ export class OrderItemsEntity {
 
   @ApiProperty({ type: String })
   @Column({ nullable: true })
+  load_description: string;
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
   truck_type: string;
 
   @ApiProperty({ type: String })

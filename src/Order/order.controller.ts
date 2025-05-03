@@ -65,8 +65,12 @@ export class OrderController {
           type: 'string',
           nullable: true,
         },
+        load_description:{
+          type:'string',
+          nullable:true
+        }
 
-        pickup_address: {
+  ,      pickup_address: {
           type: 'string',
           nullable: true,
         },

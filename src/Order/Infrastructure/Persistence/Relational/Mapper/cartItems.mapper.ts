@@ -16,6 +16,7 @@ export class CartItemsMapper {
     domainEntity.recipient_name = raw.recipient_name;
     domainEntity.recipient_number = raw.recipient_number;
     domainEntity.truck_type = raw.truck_type;
+    domainEntity.load_description = raw.load_description;
     domainEntity.cart = raw.cart;
     return domainEntity;
   }
@@ -35,6 +36,7 @@ export class CartItemsMapper {
     persistenceEntity.recipient_name = domainEntity.recipient_name;
     persistenceEntity.recipient_number = domainEntity.recipient_number;
     persistenceEntity.truck_type = domainEntity.truck_type;
+    persistenceEntity.load_description = domainEntity.load_description;
     persistenceEntity.initial_bid_value = domainEntity.initial_bid_value;
     return persistenceEntity;
   }
@@ -51,6 +53,7 @@ export class OrderItemsMapper {
     domainEntity.load_image = raw.load_image;
     domainEntity.load_type = raw.load_type;
     domainEntity.load_value = raw.load_value;
+    domainEntity.load_description = raw.load_description;
     domainEntity.recipient_name = raw.recipient_name;
     domainEntity.recipient_number = raw.recipient_number;
     domainEntity.truck_type = raw.truck_type;
@@ -71,6 +74,7 @@ export class OrderItemsMapper {
     persistenceEntity.pickup_address = domainEntity.pickup_address;
     persistenceEntity.load_image = domainEntity.load_image;
     persistenceEntity.load_type = domainEntity.load_type;
+    persistenceEntity.load_description = domainEntity.load_description;
     persistenceEntity.load_value = domainEntity.load_value;
     persistenceEntity.recipient_name = domainEntity.recipient_name;
     persistenceEntity.recipient_number = domainEntity.recipient_number;

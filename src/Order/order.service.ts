@@ -86,6 +86,7 @@ export class OrderService {
         truck_type: dto.truck_type,
         initial_bid_value: dto.initial_bid_value,
         cart: cart,
+        load_description: dto.load_description
       });
 
       //save notification
@@ -221,6 +222,7 @@ export class OrderService {
             load_type: item.load_type,
             load_value: item.load_value,
             truck_type: item.truck_type,
+            load_description:item.load_description,
             order: savedOrder,
             droppedOffAT: undefined,
             isDroppedOff: false,

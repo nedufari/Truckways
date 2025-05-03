@@ -15,6 +15,12 @@ export class AddParcelToCartDto{
   @IsString()
   load_type: string;
 
+  @ApiProperty({ type: String,  example:'fragile please handle with care '})
+  @IsNotEmpty()
+  @IsString()
+  load_description: string;
+
+
   @ApiProperty({ type: String ,example:'6 legs Trailer'})
   @IsNotEmpty()
   @IsString()

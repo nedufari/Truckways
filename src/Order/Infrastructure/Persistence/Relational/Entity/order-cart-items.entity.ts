@@ -35,6 +35,10 @@ export class CartItemsEntity {
 
   @ApiProperty({ type: String })
   @Column({ nullable: true })
+  load_description: string;
+
+  @ApiProperty({ type: String })
+  @Column({ nullable: true })
   pickup_address: string;
 
   @ApiProperty({ type: String })
