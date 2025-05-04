@@ -12,7 +12,7 @@ import { CustomerController } from './customer.controller';
 import { GeoLocationService } from 'src/utils/services/geolocation.service';
 import { PersitenceRelationalOrderModule } from 'src/Order/Infrastructure/Persistence/Relational/persitence.relational.order.module';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
-//import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity';
 import { RelationalPersistenceRiderModule } from 'src/Rider/Infrastructure/Persistence/Relational/relational-persistence-rider.module';
 
@@ -33,7 +33,7 @@ import { RelationalPersistenceRiderModule } from 'src/Rider/Infrastructure/Persi
     GeoLocationService,
     EventsGateway,
 
-    //PushNotificationsService
+    PushNotificationsService
   ],
   controllers: [CustomerController],
 })

@@ -53,7 +53,7 @@ import { Rides } from './Domain/rides';
 import { CancelRideDto, DropOffCodeDto } from './Dto/dropOff-code.dto';
 import { RiderStatus } from 'src/Enums/users.enum';
 import { WalletService } from './wallet/wallet.service';
-//import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
 export class RiderService {
   constructor(
@@ -71,8 +71,8 @@ export class RiderService {
     private bidRepository: BidRepository,
     private readonly eventsGateway: EventsGateway,
     private ridesRepo: RidesRepository,
-    private walletService:WalletService
-    //private readonly pushNotificationService:PushNotificationsService
+    private walletService:WalletService,
+    private readonly pushNotificationService:PushNotificationsService
   ) {}
 
   //notifications
@@ -586,12 +586,12 @@ export class RiderService {
           account: bid.order.customer.customerID,
         });
 
-        // //push notification
-        // this.pushNotificationService.sendPushNotification(
-        //   bid.order.customer.deviceToken,
-        //   'Bid Accepted',
-        //   'openning bid accepted'
-        // )
+        //push notification
+        this.pushNotificationService.sendPushNotification(
+          bid.order.customer.deviceToken,
+          'Bid Accepted',
+          'openning bid accepted'
+        )
 
         return {
           success: true,
@@ -634,12 +634,12 @@ export class RiderService {
           account: bid.order.customer.customerID,
         });
 
-        //  //push notification
-        //  this.pushNotificationService.sendPushNotification(
-        //   bid.order.customer.deviceToken,
-        //   'Bid Declined',
-        //   'openning bid declined'
-        // )
+         //push notification
+         this.pushNotificationService.sendPushNotification(
+          bid.order.customer.deviceToken,
+          'Bid Declined',
+          'openning bid declined'
+        )
 
         return {
           success: true,
@@ -710,12 +710,12 @@ export class RiderService {
         account: bid.rider.riderID,
       });
 
-      //push notification
-      //  this.pushNotificationService.sendPushNotification(
-      //   bid.order.customer.deviceToken,
-      //   'Bid Countered',
-      //   'openning bid countered'
-      // )
+     // push notification
+       this.pushNotificationService.sendPushNotification(
+        bid.order.customer.deviceToken,
+        'Bid Countered',
+        'openning bid countered'
+      )
 
       return this.responseService.success(
         'Bid countered successfully',
@@ -763,11 +763,11 @@ export class RiderService {
       await this.ridesRepo.save(ride);
 
       //push notification
-      //  this.pushNotificationService.sendPushNotification(
-      //   bid.order.customer.deviceToken,
-      //   'Ride Cancelled',
-      //   'ride cancelled by rider'
-      // )
+       this.pushNotificationService.sendPushNotification(
+        ride.order.customer.deviceToken,
+        'Ride Cancelled',
+        'ride cancelled by rider'
+      )
 
       // Create notification for the rider
       await this.notificationsService.create({

@@ -26,7 +26,7 @@ import { PercentageConfigRepository } from 'src/Admin/Infrastructure/Persistence
 import { PercentageType } from 'src/Enums/percentage.enum';
 import { RatingReviewDto } from './Dto/ratingReview.dto';
 import { Rides } from 'src/Rider/Domain/rides';
-//import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 
 @Injectable()
 export class OrderService {
@@ -45,7 +45,7 @@ export class OrderService {
     private paystackService: PaystackService,
     private readonly eventsGateway: EventsGateway,
 
-    //private readonly pushnotificationsService:PushNotificationsService
+    private readonly pushnotificationsService:PushNotificationsService
   ) {}
 
   //add items to cart
@@ -270,7 +270,7 @@ export class OrderService {
           });
 
           //push notifications
-          //this.pushnotificationsService.notifyAllRidersOfNewOrder(savedOrder)
+          this.pushnotificationsService.notifyAllRidersOfNewOrder(savedOrder)
 
           return savedBid;
         }),

@@ -63,7 +63,7 @@ import {
 import { MailService } from 'src/mailer/mailer.service';
 import { title } from 'process';
 
-//import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
 export class AdminService {
   constructor(
@@ -86,8 +86,7 @@ export class AdminService {
     private genefratorService: GeneratorService,
     private mailService: MailService,
     private readonly eventsGateway: EventsGateway,
-
-    //private readonly pushNotificationService:PushNotificationsService,
+    private readonly pushNotificationService:PushNotificationsService,
   ) {}
 
   async fetchAllNotifications(
@@ -1101,12 +1100,12 @@ export class AdminService {
             tokens,
           };
 
-          // result = await this.pushNotificationsService.sendNotificationToTargetUsers(
-          //   tokens,
-          //   dto.title,
-          //   dto.body,
-          //   data
-          // );
+          result = await this.pushNotificationService.sendNotificationToTargetUsers(
+            tokens,
+            dto.title,
+            dto.body,
+            data
+          );
         } else if (usertype === AnnonuncmentTargetUser.RIDERS) {
           const riders = await this.riderRepo.findRidersForAnnouncement();
           const tokens = riders
@@ -1135,12 +1134,12 @@ export class AdminService {
             tokens,
           };
 
-          // result = await this.pushNotificationsService.sendNotificationToTargetUsers(
-          //   tokens,
-          //   dto.title,
-          //   dto.body,
-          //   data
-          // );
+          result = await this.pushNotificationService.sendNotificationToTargetUsers(
+            tokens,
+            dto.title,
+            dto.body,
+            data
+          );
         }
       }
 

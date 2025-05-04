@@ -6,6 +6,7 @@ import {
   RidesRepository,
 } from 'src/Rider/Infrastructure/Persistence/rider-repository';
 import { NotificationsService } from 'src/utils/services/notifications.service';
+import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 
 @Injectable()
 export class RideJobService {
@@ -13,6 +14,7 @@ export class RideJobService {
     private readonly ridesRepository: RidesRepository,
     private readonly riderRepo: RiderRepository,
     private notificationService: NotificationsService,
+    private pushNotificationService:PushNotificationsService
   ) {}
 
   @Cron(CronExpression.EVERY_30_MINUTES)
@@ -57,17 +59,17 @@ export class RideJobService {
         return;
       }
 
-      //   await this.pushNotificationsService.sendPushNotification(
-      //     rider.deviceToken,
-      //     'Ride Status Reminder 🚚',
-      //     `Your ride #${ride.ridesID.slice(-6)} has been ongoing for 4+ hours. ` +
-      //     'Complete the ride to receive your full payment. Need help? Tap to contact support.',
-      //     {
-      //       type: 'ride_reminder',
-      //       rideId: ride.ridesID,
-      //       timestamp: new Date().toISOString()
-      //     }
-      //   );
+        await this.pushNotificationService.sendPushNotification(
+          rider.deviceToken,
+          'Ride Status Reminder 🚚',
+          `Your ride #${ride.ridesID.slice(-6)} has been ongoing for 4+ hours. ` +
+          'Complete the ride to receive your full payment. Need help? Tap to contact support.',
+          {
+            type: 'ride_reminder',
+            rideId: ride.ridesID,
+            timestamp: new Date().toISOString()
+          }
+        );
     } catch (error) {
       console.error('Failed to send reminder:', error);
     }

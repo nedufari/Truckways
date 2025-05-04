@@ -12,7 +12,7 @@ import { PersitenceRelationalOrderModule } from 'src/Order/Infrastructure/Persis
 import { RiderService } from './rider.service';
 import { RiderController } from './rider.controller';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
-//import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 import { RiderEntity } from './Infrastructure/Persistence/Relational/Entity/rider.entity';
 import { WalletService } from './wallet/wallet.service';
 import { WalletRepository } from './Infrastructure/Persistence/rider-repository';
@@ -39,8 +39,8 @@ import { RelationalPersistenceAdminModule } from 'src/Admin/Infrastructure/Persi
     EventsGateway,
     WalletService,
     PaystackService,
-    CustomAxiosService
-   // PushNotificationsService
+    CustomAxiosService,
+   PushNotificationsService
 
   ],
   controllers: [RiderController,WalletController],

@@ -38,7 +38,7 @@ import { GeneratorService } from 'src/utils/services/generator.service';
 import { CancelRideDto } from 'src/Rider/Dto/dropOff-code.dto';
 import { RatingReviewDto } from 'src/Order/Dto/ratingReview.dto';
 import { Rides } from 'src/Rider/Domain/rides';
-//import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
 export class CustomerService {
   constructor(
@@ -53,7 +53,7 @@ export class CustomerService {
     private readonly eventsGateway: EventsGateway,
     private ridesRepo: RidesRepository,
     private generatorService: GeneratorService,
-    //private readonly pushNotificationService:PushNotificationsService,
+    private readonly pushNotificationService:PushNotificationsService,
   ) {}
 
   async fetchAllNotifications(
@@ -493,11 +493,11 @@ export class CustomerService {
         });
 
         //push notification
-        // this.pushNotificationService.sendPushNotification(
-        //   bid.rider.deviceToken,
-        //   'Bid Accepted',
-        //   'counter bid accepted'
-        // )
+        this.pushNotificationService.sendPushNotification(
+          bid.rider.deviceToken,
+          'Bid Accepted',
+          'counter bid accepted'
+        )
 
         return {
           success: true,
@@ -538,11 +538,11 @@ export class CustomerService {
         });
 
         //push notification
-        //  this.pushNotificationService.sendPushNotification(
-        //   bid.rider.deviceToken,
-        //   'Bid Declined',
-        //   'counter bid declined'
-        // )
+         this.pushNotificationService.sendPushNotification(
+          bid.rider.deviceToken,
+          'Bid Declined',
+          'counter bid declined'
+        )
 
         return {
           success: true,
@@ -584,11 +584,11 @@ export class CustomerService {
       await this.ridesRepo.save(ride);
 
       //push notification
-      //  this.pushNotificationService.sendPushNotification(
-      //   bid.rider.deviceToken,
-      //   'Ride Cancelled',
-      //   'ride cancelled by customer'
-      // )
+       this.pushNotificationService.sendPushNotification(
+        ride.rider.deviceToken,
+        'Ride Cancelled',
+        'ride cancelled by customer'
+      )
 
       // Create notification for the rider
       await this.notificationsService.create({
