@@ -39,6 +39,7 @@ import { CancelRideDto } from 'src/Rider/Dto/dropOff-code.dto';
 import { RatingReviewDto } from 'src/Order/Dto/ratingReview.dto';
 import { Rides } from 'src/Rider/Domain/rides';
 import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+import { StdioPipeNamed } from 'child_process';
 @Injectable()
 export class CustomerService {
   constructor(
@@ -53,7 +54,7 @@ export class CustomerService {
     private readonly eventsGateway: EventsGateway,
     private ridesRepo: RidesRepository,
     private generatorService: GeneratorService,
-    private readonly pushNotificationService:PushNotificationsService,
+    private readonly pushNotificationService: PushNotificationsService,
   ) {}
 
   async fetchAllNotifications(
@@ -496,8 +497,8 @@ export class CustomerService {
         this.pushNotificationService.sendPushNotification(
           bid.rider.deviceToken,
           'Bid Accepted',
-          'counter bid accepted'
-        )
+          'counter bid accepted',
+        );
 
         return {
           success: true,
@@ -538,11 +539,11 @@ export class CustomerService {
         });
 
         //push notification
-         this.pushNotificationService.sendPushNotification(
+        this.pushNotificationService.sendPushNotification(
           bid.rider.deviceToken,
           'Bid Declined',
-          'counter bid declined'
-        )
+          'counter bid declined',
+        );
 
         return {
           success: true,
@@ -584,11 +585,11 @@ export class CustomerService {
       await this.ridesRepo.save(ride);
 
       //push notification
-       this.pushNotificationService.sendPushNotification(
+      this.pushNotificationService.sendPushNotification(
         ride.rider.deviceToken,
         'Ride Cancelled',
-        'ride cancelled by customer'
-      )
+        'ride cancelled by customer',
+      );
 
       // Create notification for the rider
       await this.notificationsService.create({
@@ -605,6 +606,27 @@ export class CustomerService {
       console.error(error);
       return this.responseService.internalServerError(
         'Error while cancelling ride',
+      );
+    }
+  }
+
+  async testPushNotification(): Promise<StandardResponse<any>> {
+    try {
+      const push = this.pushNotificationService.sendPushNotification(
+        'fCBTZlfrRwGhaEhXcisXEE:APA91bFVkx9c2iFyzMpevAkaLQhyDrzUb46lMK3cSfRzYbfYR5hTsaq9oi2xFUQDhTHZpcKTKRa3U8EMUwTbghOGLLpbyVdtD3HHDXfrdLBVuSAd3dhUCgE',
+        'Hello Toyib',
+        'This is a test from nedu',
+      );
+
+      return this.responseService.success(
+        'push notification sent successfully',
+        push,
+      );
+    } catch (error) {
+      console.log(error);
+      return this.responseService.internalServerError(
+        'error sending push notification',
+        error.message,
       );
     }
   }

@@ -2,32 +2,59 @@ import {
   Inject,
   Injectable,
   ServiceUnavailableException,
+  OnModuleInit,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 import { IsNull, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
- import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity';
- import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
-
-
-
-// // Initialize Firebase Admin SDK
-
-admin.initializeApp({
-  credential: admin.credential.cert({
-    projectId: "trucky-948cd",
-    clientEmail: "firebase-adminsdk-3qqpw@trucky-948cd.iam.gserviceaccount.com",
-    privateKey: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCjb4+/8qLuT8CD\nY93EL9YkLaYJTr+tOKtF56HLpupKeEWZl93y2VaFTLw8HPHeGXKWCq2KAeIgYoYL\n/bXDbsqXv1zLHC+wzohDBqPttcqNa/9XIwKWWS85uZr9UeHmUyigbtyvovUh0kfk\nZpJ7U/85ZA6N5LtJBbz7DZNgoEg43hx8DTXHXcEWpiW1JGXz54Z/Fa7ifuMGKWmV\nf+7DeoZcAoNxF5XApKMM5Mw07zPR5Dnx8j1SGOCy34aDH8JsatbN/62MaF1E3r5d\nYUTC9mS8yGJTTRoIwHtUOagzhl7gE4qqMGWhrcSWFyHw700bCjRYuujZmTlxGQK4\nZYS/Fo85AgMBAAECggEAUaVETzQjv+CYgCrOGRl6pUUmqoSsDZl/OmNOOQIQDhbK\nUkIDTzPS3LGqYW9mRrk4vIrmCckKEXqWk3vxpwl8bNVcwly42F88xBsXnoNQBlk6\nzGmBe+FezbwSmNUkgF7vr0Hivl0uj3BQmOHC8JhUKnP5L1piU0bqExLDmqRHoBxL\n8WezIjdvrh/w+EXVwUAp0d0SRd36pwZ5uQENGtkn+prV7furuCm5tPcmFVHG2r6N\nR3l3Mk9HdWFAM15UexwHLUkFUHtD5NeHRH/wQEYxRdIC0JeRwhNuDBjts0/uv4Jc\nRpDOALCb2FivkfnjpD0rpBE+LtwcfXYxTv3MollzlwKBgQDi0OkWvAVAsaIFu5Rj\nqCrlJFQMI4NTUDU+heNfZ8rp+/uNxlUgPpsbZq/03Y/4JHAWfoJNhdw/eKD12MQH\nEAAipEHY+XBNtRJzLsHKOCtpzbxQVn2n/pJEn8ybSlF0kuGIvCGuUuvHmHLBgz+C\nvipkbAo5y5A/I5xAW4ZT7BMrZwKBgQC4dvg4MRzFTTyWW340RrGrxgW8ot7MRG2i\nnEVUt9Sa9TCK21cTMXq0G7lLvFn/KfAK/fBJCI4b1TmnaS8ovOQqon5SO/GGWwiz\nacY8q5dlWrd54bymJ35dTfdJGCAYi5uv4/BNZi/7aWFNqS8eeljAF7B9gsxjHK2G\nrjcWJMZsXwKBgDFLG80wEagssryyNp6t9pyUF5wHv8vEe73Z1T9vzD6r39DBENEQ\nKh97YrRBzr8sFBwfZGw6slItAjZL5NZwGMdukUz5cPnCZ38W41DygiTdbJa9JVP0\nVI+LdyksrqU6Ir/Xuy4qoUlgjVgXER91+rqWbGaBIhlGwPePrJLilIvzAoGAcVlx\nl53eLwMR+taHy3mxTXsmJU7zlxNpRyW9mJxJgVqvFHRJolqiKrBqgTZhGuFbRnXa\nRBaEtGemwM9qkh7YGba15rQ86rFfvFd/3+IU6sv+uF9U+8iC5rS1Am5Xsp1+8msf\nS4BCdbvAdedDM/g8NvWXlthb3X9OxdahtPKuFwMCgYEAqZ/5ftLjfGxHvNchhz6J\nZEdcODjmTsIO38QZ2bYBMG3b1luvLzP64BiiaaYI355X5AO5Y/+Ra8sib96dqnVF\ntUJvAJS8q8b5TQIJBgH9etuDDMkIKKILbphr8G41Qv4V2qQqAP9foojIQ1D0N8Fb\nT1/kZJVQAiNw/J7sFeumoEQ=\n-----END PRIVATE KEY-----\n"
-    .replace(/\\n/g, '\n'),
-  }),
-});
+import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity';
+import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
 
 @Injectable()
-export class PushNotificationsService {
+export class PushNotificationsService implements OnModuleInit {
   constructor(
     @InjectRepository(RiderEntity)
     private readonly riderRepository: Repository<RiderEntity>,
+    private readonly configService: ConfigService,
   ) {}
+
+  onModuleInit() {
+    this.initializeFirebase();
+  }
+
+  private initializeFirebase() {
+    // Check if Firebase app is already initialized to prevent multiple initializations
+    if (!admin.apps.length) {
+      try {
+        // Get environment variables with ConfigService
+        const projectId = this.configService.get<string>('FIREBASE_PROJECT_ID');
+        const clientEmail = this.configService.get<string>('FIREBASE_CLIENT_EMAIL');
+        const privateKey = this.configService.get<string>('FIREBASE_PRIVATE_KEY');
+
+        // Validate required Firebase credentials
+        if (!projectId || !clientEmail || !privateKey) {
+          console.error('Missing Firebase credentials. Check your environment variables:');
+          console.error(`- FIREBASE_PROJECT_ID: ${projectId ? 'Set' : 'Missing'}`);
+          console.error(`- FIREBASE_CLIENT_EMAIL: ${clientEmail ? 'Set' : 'Missing'}`);
+          console.error(`- FIREBASE_PRIVATE_KEY: ${privateKey ? 'Set' : 'Missing'}`);
+          return;
+        }
+
+        // Initialize Firebase Admin SDK
+        admin.initializeApp({
+          credential: admin.credential.cert({
+            projectId,
+            clientEmail,
+            privateKey: privateKey.replace(/\\n/g, '\n'),
+          }),
+        });
+        console.log('Firebase Admin SDK initialized successfully.');
+      } catch (error) {
+        console.error('Error initializing Firebase Admin SDK:', error);
+      }
+    }
+  }
 
   async sendPushNotification(
     token: string,
@@ -35,6 +62,11 @@ export class PushNotificationsService {
     body: string,
     data?: any,
   ): Promise<string> {
+    // Check if Firebase is initialized
+    if (!admin.apps.length) {
+      throw new ServiceUnavailableException('Firebase Admin SDK not initialized.');
+    }
+
     const message = {
       notification: {
         title,
@@ -64,7 +96,7 @@ export class PushNotificationsService {
       const riders = await this.riderRepository.find({
         where: { 
           emailConfirmed: true,
-          isAprroved:true,
+          isAprroved: true,
           deviceToken: Not(IsNull()) 
         },
         select: ['riderID', 'deviceToken', 'name']
@@ -108,8 +140,6 @@ export class PushNotificationsService {
             }
           });
           console.log('Failed tokens:', failedTokens);
-
-         
         }
 
         return {
@@ -125,8 +155,6 @@ export class PushNotificationsService {
       throw new ServiceUnavailableException(error);
     }
   }
-
-
 
   // Helper method to send new order notification to all riders
   async notifyAllRidersOfNewOrder(order: OrderEntity): Promise<void> {
@@ -151,8 +179,7 @@ export class PushNotificationsService {
     }
   }
 
-
-async sendNotificationToTargetUsers(
+  async sendNotificationToTargetUsers(
     tokens: string[],
     title: string,
     body: string,

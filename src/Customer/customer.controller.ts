@@ -500,4 +500,9 @@ export class CustomerController {
   ): Promise<StandardResponse<{ data: Order[]; total: number }>> {
     return await this.customerService.FetchAllMyOrders(dto,req.user);
   }
+
+  @Post('testPushNotification')
+  async pushNotification():Promise<StandardResponse<any>>{
+    return this.customerService.testPushNotification()
+  }
 }
