@@ -10,7 +10,7 @@ import {
   IsNumber,
   IsString,
 } from 'class-validator';
-import { RiderStatus, Role } from 'src/Enums/users.enum';
+import { OnboardingAction, RiderStatus, Role } from 'src/Enums/users.enum';
 import { VehicleEntity } from '../Infrastructure/Persistence/Relational/Entity/vehicle.entity';
 import { BankEntity } from '../Infrastructure/Persistence/Relational/Entity/bank.entity';
 import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
@@ -141,6 +141,18 @@ export class Rider {
 
   @ApiProperty({ type: () => [BidEntity] })
   accepted_bids: BidEntity[];
+
+  @ApiProperty({ enum: OnboardingAction })
+  @IsEnum(OnboardingAction)
+  onboardingAction?: OnboardingAction;
+
+  @ApiProperty()
+  @IsJSON()
+  onboardingStatus?: { [key in OnboardingAction]: boolean };
+
+  @ApiProperty({ type: Number })
+ @IsNumber()
+  onboardingPercentage?: number;
 
   //wallet
   @ApiProperty({ type: () => WalletEntity })

@@ -27,6 +27,9 @@ export class RiderMapper {
     domainEntity.isBlocked = raw.isBlocked;
     domainEntity.emailConfirmed = raw.emailConfirmed;
     domainEntity.role = raw.role;
+    domainEntity.onboardingPercentage = raw.onboardingPercentage;
+    domainEntity.onboardingStatus = raw.onboardingStatus;
+    domainEntity.onboardingAction = raw.onboardingAction;
     domainEntity.vehicle = raw.vehicle;
     domainEntity.bank_details = raw.bank_details;
     domainEntity.my_wallet = raw.my_wallet;
@@ -61,7 +64,11 @@ export class RiderMapper {
     persistenceEntity.driversLicenceBack = domainEntity.driversLicenceBack;
     persistenceEntity.driversLicenceFront = domainEntity.driversLicenceFront;
     persistenceEntity.phoneNumber = domainEntity.phoneNumber;
-    persistenceEntity.email = domainEntity.email;
+    persistenceEntity.email = domainEntity.email; 
+    persistenceEntity.onboardingStatus = domainEntity.onboardingStatus;
+    persistenceEntity.onboardingAction = domainEntity.onboardingAction;
+    persistenceEntity.onboardingPercentage = domainEntity.onboardingPercentage;
+
     persistenceEntity.password = domainEntity.password;
     persistenceEntity.emailConfirmed = domainEntity.emailConfirmed;
     persistenceEntity.isAprroved = domainEntity.isAprroved;

@@ -383,45 +383,71 @@ export class RiderAuthService {
   // login
   async Login(dto: LoginDto): Promise<StandardResponse<any>> {
     try {
-      const customer = await this.riderRepository.findByEmail(dto.email);
-      if (!customer) return this.responseService.notFound('invalid credential');
+      const rider = await this.riderRepository.findByEmail(dto.email);
+      if (!rider) return this.responseService.notFound('Invalid credentials');
 
       const comparePassword = await this.generatorService.comaprePassword(
         dto.password,
-        customer.password,
+        rider.password,
       );
       if (!comparePassword)
-        return this.responseService.notFound('invalid credential');
-
-      if (!customer.emailConfirmed)
-        return this.responseService.badRequest('user is not verified yet');
-
-      if (!customer.isAprroved)
-        return this.responseService.badRequest(
-          'oops! sorry you cannot login yet, you are yet to be approved by the Truckways Mgt, please try this again when you get an approval email. Thanks',
-        );
-
-      if (customer.isBlocked)
-        return this.responseService.badRequest(
-          'you are blocked and barred from logging into your accout, please file a complaint via our email. Thanks ',
-        );
-
-      await this.notificationService.create({
-        message: `Hi ${customer.name}, logged in successfully.`,
-        subject: 'User Login',
-        account: customer.riderID,
-      });
+        return this.responseService.notFound('Invalid credentials');
 
       // Generate and return JWT token
       const token = await this.generatorService.signToken(
-        customer.id,
-        customer.email,
-        customer.role,
+        rider.id,
+        rider.email,
+        rider.role,
       );
 
-      return this.responseService.success('log in successful', {
+      if (!rider.emailConfirmed)
+        return this.responseService.badRequest(
+          'Your account is not verified yet. Please check your email for verification instructions.',
+        );
+
+      if (rider.onboardingPercentage !== 100) {
+        const pendingSteps = [];
+
+        if (!rider.onboardingStatus?.Personal_Profile) {
+          pendingSteps.push('Personal Profile');
+        }
+        if (!rider.onboardingStatus?.Vehicle_Profile) {
+          pendingSteps.push('Vehicle Profile');
+        }
+        if (!rider.onboardingStatus?.Payment_Profile) {
+          pendingSteps.push('Payment Profile');
+        }
+
+        const pendingStepsText =
+          pendingSteps.length > 0
+            ? `You still need to complete: ${pendingSteps.join(', ')}.`
+            : '';
+
+        return this.responseService.success(
+          `Welcome back! Your profile is ${rider.onboardingPercentage}% complete. ${pendingStepsText} We've provided a temporary access token to help you complete your onboarding.`,
+          { rider: rider, onboardingToken: token },
+        );
+      }
+
+      if (!rider.isAprroved)
+        return this.responseService.badRequest(
+          'Your account is pending approval from Truckways Management. Please try again after you receive the approval email. Thank you for your patience.',
+        );
+
+      if (rider.isBlocked)
+        return this.responseService.badRequest(
+          'Your account has been suspended. Please contact our support team via email to resolve this issue.',
+        );
+
+      await this.notificationService.create({
+        message: `Hi ${rider.name}, you've logged in successfully.`,
+        subject: 'User Login',
+        account: rider.riderID,
+      });
+
+      return this.responseService.success('Login successful', {
         token: token,
-        user: customer,
+        user: rider,
       });
     } catch (error) {
       return this.responseService.internalServerError(

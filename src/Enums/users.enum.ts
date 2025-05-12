@@ -10,3 +10,9 @@ export enum  RiderStatus{
     OFFLINE ='Offline'
 }
 
+export enum OnboardingAction{
+    PAYMENT_PROFILE= "Payment_Profile",
+    PERSONAL_PROFILE ="Personal_Profile",
+    VEHICLE_PROFILE="Vehicle_Profile",
+    
+}

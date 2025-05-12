@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { RiderStatus, Role } from 'src/Enums/users.enum';
+import { OnboardingAction, RiderStatus, Role } from 'src/Enums/users.enum';
 import {
   Column,
   Entity,
@@ -155,6 +155,23 @@ export class RiderEntity {
   @ApiProperty({ type: () => WalletEntity })
   @OneToOne(() => WalletEntity, (wallet) => wallet.rider)
   my_wallet: WalletEntity;
+
+  @ApiProperty({ enum: OnboardingAction })
+  @Column({ nullable: true, type: 'enum', enum: OnboardingAction })
+  onboardingAction?: OnboardingAction;
+
+  @ApiProperty()
+  @Column('jsonb', { nullable: false, default: '{}' })
+  onboardingStatus?: { [key in OnboardingAction]: boolean };
+
+  @ApiProperty({ type: Number })
+  @Column('decimal', {
+    precision: 5,
+    scale: 2,
+    comment: 'Percentage value between 0 and 100',
+    default: 0.0,
+  })
+  onboardingPercentage?: number;
 
   //rides
 

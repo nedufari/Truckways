@@ -51,7 +51,7 @@ import { Order } from 'src/Order/Domain/order';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
 import { Rides } from './Domain/rides';
 import { CancelRideDto, DropOffCodeDto } from './Dto/dropOff-code.dto';
-import { RiderStatus } from 'src/Enums/users.enum';
+import { OnboardingAction, RiderStatus } from 'src/Enums/users.enum';
 import { WalletService } from './wallet/wallet.service';
 import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 @Injectable()
@@ -261,15 +261,19 @@ export class RiderService {
         driversLicenceFront: driverlicencefront,
         driversLicenceBack: driverlicenceback,
         updatedAT: new Date(),
+        onboardingAction : OnboardingAction.PERSONAL_PROFILE,
+        onboardingStatus :{ ...rider.onboardingStatus, 
+          Vehicle_Profile:rider.onboardingStatus?.Vehicle_Profile || false,
+          Personal_Profile: true,
+          Payment_Profile:rider.onboardingStatus?.Payment_Profile ||false
+  
+        },
+        onboardingPercentage : Math.min(
+          Number(rider.onboardingPercentage || 0) + 35,
+          100,
+        )
+      
       };
-
-      // Handle email check
-      //   if (dto.email) {
-      //     const checkemail = await this.riderRepository.findByEmail(dto.email);
-      //     if (checkemail && checkemail.id !== rider.id) {
-      //       return this.responseService.badRequest('email already exists');
-      //     }
-      //   }
 
       // Handle address update
       if (dto.address) {
@@ -343,6 +347,19 @@ export class RiderService {
         owner: rider,
       });
 
+      rider.onboardingAction = OnboardingAction.VEHICLE_PROFILE;
+      rider.onboardingStatus ={ ...rider.onboardingStatus, 
+        Vehicle_Profile:true,
+        Personal_Profile: rider.onboardingStatus?.Personal_Profile || false,
+        Payment_Profile:rider.onboardingStatus?.Payment_Profile ||false
+
+      };
+      rider.onboardingPercentage = Math.min(
+        Number(rider.onboardingPercentage || 0) + 35,
+        100,
+      );
+      await this.riderRepository.save(rider)
+
       // Save notification
       await this.notificationsService.create({
         message: `${rider.name} has updated their vehicle profile`,
@@ -379,6 +396,19 @@ export class RiderService {
         updatedAT: undefined,
         owner: rider,
       });
+
+      rider.onboardingAction = OnboardingAction.PAYMENT_PROFILE;
+      rider.onboardingStatus ={ ...rider.onboardingStatus, 
+        Vehicle_Profile:rider.onboardingStatus?.Vehicle_Profile || false,
+        Personal_Profile: rider.onboardingStatus?.Personal_Profile || false,
+        Payment_Profile:true
+
+      };
+      rider.onboardingPercentage = Math.min(
+        Number(rider.onboardingPercentage || 0) + 30,
+        100,
+      );
+      await this.riderRepository.save(rider)
 
       // Save notification
       await this.notificationsService.create({
