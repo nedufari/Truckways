@@ -45,6 +45,8 @@ export class PaystackService {
     amount: number,
     customer: PaystackCustomer,
     order: OrderEntity,
+    transactionId:string,
+    callbackUrl:string
   ) => {
     const reference = order.orderID;
     const response = await this._axiosService.post<
@@ -52,8 +54,8 @@ export class PaystackService {
     >(`${this._config.baseUrl}/transaction/initialize`, {
       amount: amount * 100, // Convert to kobo (Paystack expects amount in kobo)
       email: customer.email,
-      reference,
-      //callback_url: process.env.PAYSTACK_CALLBACK_URL,
+      reference:transactionId,
+      callback_url: callbackUrl,
       metadata: {
         customer_fields: {
           fullname: customer.full_name,
@@ -199,4 +201,64 @@ export class PaystackService {
       throw new Error(`Verifying transaction  failed: ${error.message}`);
     }
   };
+
+
+
+  async verifyTransaction(reference: string): Promise<{
+    status: string;
+    reference: string;
+    amount: number;
+    email: string;
+    message?: string;
+  }> {
+    try {
+      this._axiosService.init({
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this._config.secretKey}`,
+      });
+
+      const verificationResponse = await this._axiosService.get<
+        PayStaackStandardResponse<VerifyTransactionResponse>
+      >(`${this._config.baseUrl}/transaction/verify/${reference}`, {
+        timeout: 10000,
+      });
+
+      if (!verificationResponse) {
+        throw new Error('No response from Paystack');
+      }
+
+      const paymentData = verificationResponse.data;
+
+      if (!paymentData) throw new Error('no paystack data returned ')
+
+      // Handle Paystack API-level errors (e.g., invalid reference)
+      if (!paymentData.status) {
+        return {
+          status: 'failed',
+          reference,
+          amount: 0,
+          email: '',
+          message: paymentData.message || 'Verification failed',
+        };
+      }
+
+      const transactionData = paymentData.data;
+
+      return {
+        status: transactionData.status, // 'success', 'pending', 'failed'
+        reference: transactionData.reference,
+        amount: transactionData.amount,
+        email: transactionData.customer?.email || '',
+      };
+    } catch (error) {
+      console.error('Verification error:', error);
+      return {
+        status: 'error',
+        reference,
+        amount: 0,
+        email: '',
+        message: error.message,
+      };
+    }
+  }
 }

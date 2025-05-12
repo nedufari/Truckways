@@ -3,6 +3,7 @@ import { TransactionStatus, TransactionType } from 'src/Enums/transaction.enum';
 import { TransactionMetadata } from '../Infrastructure/Persistence/Relational/Entity/transaction.entity';
 import { RiderEntity } from '../Infrastructure/Persistence/Relational/Entity/rider.entity';
 import { IsDate, IsEnum, IsJSON, IsNumber, IsString } from 'class-validator';
+import { CustomerEntity } from 'src/Customer/Infrastructure/Persistence/Relational/Entity/customer.entity';
 
 export class Transactions {
   @ApiProperty({ type: Number })
@@ -49,4 +50,7 @@ export class Transactions {
 
   @ApiPropertyOptional({ type: () => RiderEntity })
   rider?: RiderEntity;
+
+  @ApiPropertyOptional({ type: () => CustomerEntity})
+  customer?:CustomerEntity
 }

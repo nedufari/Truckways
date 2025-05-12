@@ -130,6 +130,7 @@ export class CustomerAuthService {
         },
         my_cart: undefined,
         my_orders: [],
+        my_transaction: []
       });
 
       //save notification

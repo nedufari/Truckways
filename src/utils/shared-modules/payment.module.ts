@@ -13,6 +13,8 @@ import { GeneratorService } from '../services/generator.service';
 import { JwtService } from '@nestjs/jwt';
 import { RelationalPersistenceAdminModule } from 'src/Admin/Infrastructure/Persistence/Relational/relational-persistence-admin.module';
 import { PersitenceRelationalOrderModule } from 'src/Order/Infrastructure/Persistence/Relational/persitence.relational.order.module';
+import { PaystackWebhookService } from 'src/Payment/webhooks/webhook.service';
+import { WebhookController } from 'src/Payment/webhooks/webhook.controller';
 
 @Module({
   imports: [
@@ -30,11 +32,13 @@ import { PersitenceRelationalOrderModule } from 'src/Order/Infrastructure/Persis
     NotificationsService,
     GeneratorService,
     JwtService,
+    PaystackWebhookService,
     {
       provide: PayStackConfig,
       useFactory: () => PayStackConfig.fromEnv(),
     },
   ],
+  controllers:[WebhookController],
   exports: [PayStackConfig, PaystackService, CustomAxiosService],
 })
 export class PaystackModule {}

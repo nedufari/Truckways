@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Role } from 'src/Enums/users.enum';
 import { OrderCartEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order-cart.entity';
 import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
+import { TransactionEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/transaction.entity';
 import {
   Column,
   Entity,
@@ -98,6 +99,10 @@ export class CustomerEntity {
   @ApiProperty({ type: () => OrderCartEntity })
   @OneToOne(() => OrderCartEntity, (cart) => cart.customer)
   my_cart: OrderCartEntity;
+
+  @ApiProperty({type:[TransactionEntity]})
+  @OneToMany(()=>TransactionEntity, (tran)=>tran.customer)
+  my_transaction:TransactionEntity[]
 
   
 }

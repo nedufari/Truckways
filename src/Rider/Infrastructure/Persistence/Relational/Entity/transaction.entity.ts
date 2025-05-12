@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { RiderEntity } from './rider.entity';
 import { TransactionStatus, TransactionType } from 'src/Enums/transaction.enum';
+import { CustomerEntity } from 'src/Customer/Infrastructure/Persistence/Relational/Entity/customer.entity';
 
 
 
@@ -73,4 +74,8 @@ export class TransactionEntity {
   @ApiPropertyOptional({ type: () => RiderEntity })
   @ManyToOne(() => RiderEntity, (rider) => rider.my_transactions)
   rider?: RiderEntity;
+
+  @ApiPropertyOptional({ type: () => CustomerEntity})
+  @ManyToOne(() => CustomerEntity, (cus) => cus.my_transaction)
+  customer?: CustomerEntity;
 }

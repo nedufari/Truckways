@@ -16,12 +16,14 @@ import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
 import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity';
 import { RelationalPersistenceAdminModule } from 'src/Admin/Infrastructure/Persistence/Relational/relational-persistence-admin.module';
+import { RelationalPersistenceRiderModule } from 'src/Rider/Infrastructure/Persistence/Relational/relational-persistence-rider.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([NotificationsEntity,RiderEntity]),
     PersitenceRelationalOrderModule,
-    RelationalPersistenceAdminModule
+    RelationalPersistenceAdminModule,
+    RelationalPersistenceRiderModule
   ],
   providers: [
     ResponseService,

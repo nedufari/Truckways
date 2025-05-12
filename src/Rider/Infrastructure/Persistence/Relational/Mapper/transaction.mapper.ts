@@ -16,6 +16,7 @@ export class TransactionMapper {
     domainEntity.description = raw.description;
     domainEntity.transactionID = raw.transactionID;
     domainEntity.type = raw.type;
+    domainEntity.customer = raw.customer;
     domainEntity.status = raw.status
 
     return domainEntity;
@@ -26,6 +27,7 @@ export class TransactionMapper {
     if (domainEntity.id && typeof domainEntity.id === 'number') {
     }
     persistenceEntity.rider = domainEntity.rider;
+    persistenceEntity.customer = domainEntity.customer;
     persistenceEntity.amount = domainEntity.amount;
     persistenceEntity.createdAT = domainEntity.createdAT;
     persistenceEntity.reference = domainEntity.reference;

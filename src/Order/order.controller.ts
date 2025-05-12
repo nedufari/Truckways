@@ -34,8 +34,6 @@ import { Role } from 'src/Enums/users.enum';
 
 @ApiTags('Order Service')
 @ApiBearerAuth()
-@UseGuards(JwtGuard, RoleGuard)
-@Roles(Role.CUSTOMER)
 @Controller({
   path: 'order/',
   version: '1.0',
@@ -65,12 +63,12 @@ export class OrderController {
           type: 'string',
           nullable: true,
         },
-        load_description:{
-          type:'string',
-          nullable:true
-        }
+        load_description: {
+          type: 'string',
+          nullable: true,
+        },
 
-  ,      pickup_address: {
+        pickup_address: {
           type: 'string',
           nullable: true,
         },
@@ -93,6 +91,8 @@ export class OrderController {
       },
     },
   })
+  @UseGuards(JwtGuard, RoleGuard)
+  @Roles(Role.CUSTOMER)
   @Patch('add-parcel-to-cart/:CartID')
   @ApiOkResponse({
     schema: {
@@ -136,6 +136,8 @@ export class OrderController {
     },
   })
   @ApiOperation({ summary: 'remove parcel from cart' })
+  @UseGuards(JwtGuard, RoleGuard)
+  @Roles(Role.CUSTOMER)
   async RempoveParcelFromCart(
     @Req() req,
     @Param('cartID') cartID: string,
@@ -167,6 +169,8 @@ export class OrderController {
     summary:
       'checkout from cart and place order, this will create an order and also create the inital bid',
   })
+  @UseGuards(JwtGuard, RoleGuard)
+  @Roles(Role.CUSTOMER)
   async PlaceOrder(
     @Req() req,
     @Param('cartID') cartID: string,
@@ -190,6 +194,8 @@ export class OrderController {
     },
   })
   @ApiOperation({ summary: 'initialize order payment with paystack' })
+  @UseGuards(JwtGuard, RoleGuard)
+  @Roles(Role.CUSTOMER)
   async PayForOrder(
     @Req() req,
     @Param('orderID') orderID: string,
@@ -213,11 +219,29 @@ export class OrderController {
     },
   })
   @ApiOperation({ summary: 'track order' })
+  @UseGuards(JwtGuard, RoleGuard)
+  @Roles(Role.CUSTOMER)
   async trackOrder(
     @Req() req,
     @Query('keyword') keyword: string,
   ): Promise<StandardResponse<Order>> {
     return await this.orderService.TrackOrder(keyword);
+  }
+
+  @Get('payment/callback')
+  async handlePaymentCallback(
+    @Query('reference') reference: string,
+    @Query('trxref') trxref: string,
+  ) {
+    // Process payment immediately
+    const result = await this.orderService.processEventPayment(trxref);
+
+    // Simple status mapping
+    const status = result.success ? 'success' : 'failed';
+
+    return {
+      message: `payment_status=${status}&reference=${reference}`,
+    };
   }
 }
 

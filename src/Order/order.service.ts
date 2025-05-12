@@ -17,7 +17,7 @@ import { GeoLocationService } from 'src/utils/services/geolocation.service';
 import { CartItem } from './Domain/order-cart-items';
 import { CustomerEntity } from 'src/Customer/Infrastructure/Persistence/Relational/Entity/customer.entity';
 import { Order } from './Domain/order';
-import { BidStatus, OrderStatus } from 'src/Enums/order.enum';
+import { BidStatus, OrderStatus, PaymentStatus } from 'src/Enums/order.enum';
 import { Injectable } from '@nestjs/common';
 import { PaystackCustomer } from 'src/Payment/paystack/paystack-standard-response';
 import { PaystackService } from 'src/Payment/paystack/paystack.service';
@@ -27,6 +27,8 @@ import { PercentageType } from 'src/Enums/percentage.enum';
 import { RatingReviewDto } from './Dto/ratingReview.dto';
 import { Rides } from 'src/Rider/Domain/rides';
 import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+import { TransactionRepository } from 'src/Rider/Infrastructure/Persistence/rider-repository';
+import { TransactionStatus, TransactionType } from 'src/Enums/transaction.enum';
 
 @Injectable()
 export class OrderService {
@@ -37,6 +39,7 @@ export class OrderService {
     private cartItemRepositor: CartItemRepository,
     private bidRepository: BidRepository,
     private percentageRepository: PercentageConfigRepository,
+    private transactionRepositoory: TransactionRepository,
     private responseService: ResponseService,
     private notificationService: NotificationsService,
     private generatorService: GeneratorService,
@@ -45,7 +48,7 @@ export class OrderService {
     private paystackService: PaystackService,
     private readonly eventsGateway: EventsGateway,
 
-    private readonly pushnotificationsService:PushNotificationsService
+    private readonly pushnotificationsService: PushNotificationsService,
   ) {}
 
   //add items to cart
@@ -86,7 +89,7 @@ export class OrderService {
         truck_type: dto.truck_type,
         initial_bid_value: dto.initial_bid_value,
         cart: cart,
-        load_description: dto.load_description
+        load_description: dto.load_description,
       });
 
       //save notification
@@ -222,7 +225,7 @@ export class OrderService {
             load_type: item.load_type,
             load_value: item.load_value,
             truck_type: item.truck_type,
-            load_description:item.load_description,
+            load_description: item.load_description,
             order: savedOrder,
             droppedOffAT: undefined,
             isDroppedOff: false,
@@ -270,7 +273,7 @@ export class OrderService {
           });
 
           //push notifications
-          this.pushnotificationsService.notifyAllRidersOfNewOrder(savedOrder)
+          this.pushnotificationsService.notifyAllRidersOfNewOrder(savedOrder);
 
           return savedBid;
         }),
@@ -343,12 +346,37 @@ export class OrderService {
         phone: customer.phoneNumber,
       };
 
+      const transactionID = `TRKT${await this.generatorService.generateUserID()}`;
+
+      const callbackUrl = `https://truckways.onrender.com/api/v1/truckways/v1.0/order/payment/callback?reference=${transactionID}`;
+
+
       const paymentResponse = await this.paystackService.PayForOrder(
         Number(totalPaymentAmount),
         PaystackCustomer,
         order,
+        transactionID,
+        callbackUrl
       );
       console.log(order.accepted_bid);
+
+     
+      // Create transaction
+      await this.transactionRepositoory.create({
+        transactionID,
+        amount: order.accepted_bid,
+        type: TransactionType.DEBIT,
+        status: TransactionStatus.PENDING,
+        reference: transactionID, // Use undefined to match your previous implementation
+        description: 'order payment initialization',
+        metadata: {
+          type: 'order_payment',
+          orderReference: order.orderID,
+        },
+        id: 0,
+        createdAT: new Date(),
+        customer: customer,
+      });
 
       if (paymentResponse) {
         await this.notificationService.create({
@@ -371,6 +399,92 @@ export class OrderService {
       return this.responseService.internalServerError(
         'Error while initializing order Payment',
       );
+    }
+  }
+
+
+
+  //process payments
+  async processEventPayment(reference: string): Promise<StandardResponse<any>> {
+    try {
+      const verificationResponse =
+        await this.paystackService.verifyTransaction(reference);
+
+      if (!verificationResponse.status) {
+        return this.responseService.badRequest(
+          'Transaction verification failed',
+        );
+      }
+
+      if (verificationResponse.status === 'pending') {
+        return this.responseService.badRequest(
+          'Payment Pending, retry after 20 secs',
+        );
+      }
+
+      //idopodency checks
+      const existingTransaction =
+        await this.transactionRepositoory.findByID(reference);
+      if (existingTransaction?.status === TransactionStatus.SUCCESSFUL) {
+        return this.responseService.badRequest('payment already processed');
+      }
+
+      return this.transactionRepositoory.executeWithTransaction(
+        async (repository) => {
+          const transaction = await repository.findOne({
+            where: { reference: reference },
+            relations: ['customer'],
+          });
+
+          if (
+            !transaction ||
+            transaction.status !== TransactionStatus.PENDING
+          ) {
+            return this.responseService.badRequest(
+              `Invalid transaction for reference: ${reference}`,
+            );
+          }
+
+          // verify amount
+          const expectedAmount = Number(transaction.amount);
+          const receivedAmount = Number(verificationResponse.amount / 100);
+
+          if (expectedAmount !== receivedAmount) {
+            return this.responseService.badRequest(
+              `Amount mismatch: Expected ${expectedAmount}, got ${receivedAmount}`,
+            );
+          }
+
+          transaction.status = TransactionStatus.SUCCESSFUL;
+          await repository.save(transaction);
+
+          //update the order payment
+          const order = await this.orderRepository.findByID(
+            transaction.metadata.orderReference,
+          );
+          if (!order)
+            return this.responseService.badRequest(
+              `Order with ID ${reference} not found`,
+            );
+
+          order.paymentStatus = PaymentStatus.SUCCESFUL;
+
+          await this.orderRepository.save(order);
+
+          await this.notificationService.create({
+            subject: `${transaction.type} successful Payment Notification`,
+            message: `${transaction.customer.name} has successfully paid for ${transaction.type} }`,
+            account: transaction.customer.customerID,
+          });
+
+          return this.responseService.success('order payment verified', {
+            transactionReference: reference,
+          });
+        },
+      );
+    } catch (error) {
+      console.log(error);
+      throw new Error('error processing order payment');
     }
   }
 

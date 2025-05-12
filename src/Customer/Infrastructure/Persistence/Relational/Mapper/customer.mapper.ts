@@ -1,6 +1,7 @@
 import { Customer } from 'src/Customer/Domain/customer';
 import { CustomerEntity } from '../Entity/customer.entity';
 import { OrderMapper } from 'src/Order/Infrastructure/Persistence/Relational/Mapper/order.mapper';
+import { TransactionMapper } from 'src/Rider/Infrastructure/Persistence/Relational/Mapper/transaction.mapper';
 
 export class CustomerMapper {
   static toDomain(raw: CustomerEntity): Customer {
@@ -22,7 +23,8 @@ export class CustomerMapper {
     domainEntity.isVerified = raw.isVerified;
     domainEntity.role = raw.role;
     domainEntity.my_cart = raw.my_cart;
-    domainEntity.my_orders = raw.my_orders ? raw.my_orders.map((order)=>OrderMapper.toDomain(order)):[]
+    domainEntity.my_orders = raw.my_orders ? raw.my_orders.map((order)=>OrderMapper.toDomain(order)):[];
+    domainEntity.my_transaction = raw.my_transaction ? raw.my_transaction.map((order)=>TransactionMapper.toDomain(order)):[]
     return domainEntity;
   }
 
@@ -50,6 +52,7 @@ export class CustomerMapper {
     persistenceEntity.createdAT = domainEntity.createdAT;
     persistenceEntity.my_cart = domainEntity.my_cart;
     persistenceEntity.my_orders = domainEntity.my_orders ? domainEntity.my_orders.map((order)=>OrderMapper.toPersistence(order)): []
+    persistenceEntity.my_transaction = domainEntity.my_transaction ? domainEntity.my_transaction.map((order)=>TransactionMapper.toPersistence(order)): []
     return persistenceEntity;
   }
 }

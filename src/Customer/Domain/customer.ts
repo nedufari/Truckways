@@ -12,6 +12,7 @@ import {
 import { Role } from 'src/Enums/users.enum';
 import { OrderCartEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order-cart.entity';
 import { OrderEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/order.entity';
+import { TransactionEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/transaction.entity';
 
 export class Customer {
   @ApiProperty({ type: Number })
@@ -97,4 +98,7 @@ export class Customer {
   //orders
   @ApiProperty({ type: () => [OrderEntity] })
   my_orders: OrderEntity[];
+
+  @ApiProperty({type:[TransactionEntity]})
+  my_transaction:TransactionEntity[]
 }
