@@ -284,7 +284,7 @@ export class AdminService {
       }
 
       // Perform the update
-      await this.adminRepo.update(admin.id, updateObject);
+      await this.adminRepo.save(updateObject);
 
       // Fetch the updated customer to return the latest data
       const updatedAdmin = await this.adminRepo.findByID(admin.id);
@@ -318,7 +318,7 @@ export class AdminService {
 
       admin.profilePicture = mediaurl;
 
-      await this.adminRepo.update(admin.id, admin);
+      await this.adminRepo.save(admin);
 
       await this.notificationsService.create({
         message: ` ${admin.name},  has uploaded profile pics .`,

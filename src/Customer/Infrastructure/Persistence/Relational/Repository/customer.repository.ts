@@ -30,6 +30,16 @@ export class CustomerRelationalRepository implements CustomerRepository {
   async findByID(id: number): Promise<Customer> {
     const customer = await this.customerEntityRepository.findOne({
       where: { id: id },
+      relations: [
+        'my_orders',
+        'my_orders.customer',
+        'my_orders.bid',
+        'my_orders.Rider',
+        'my_orders.Rider.vehicle',
+        'my_orders.items',
+        'my_cart',
+        'my_transaction',
+      ],
     });
     return customer ? CustomerMapper.toDomain(customer) : null;
   }
@@ -63,7 +73,7 @@ export class CustomerRelationalRepository implements CustomerRepository {
   async findCustomersForAnnouncement(): Promise<Customer[]> {
     const result = await this.customerEntityRepository.find({
       where: { isVerified: true },
-      select: ['email', 'customerID','deviceToken'],
+      select: ['email', 'customerID', 'deviceToken'],
     });
     const wallets = result.map(CustomerMapper.toDomain);
     return wallets;

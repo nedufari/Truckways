@@ -256,7 +256,7 @@ export class CustomerService {
       }
 
       // Perform the update
-      await this.customerRepo.update(customer.id, updateObject);
+      await this.customerRepo.save(updateObject);
 
       // Fetch the updated customer to return the latest data
       const updatedCustomer = await this.customerRepo.findByID(customer.id);
@@ -290,7 +290,7 @@ export class CustomerService {
 
       customer.profilePicture = mediaurl;
 
-      await this.customerRepo.update(customer.id, customer);
+      await this.customerRepo.save( customer);
 
       await this.notificationsService.create({
         message: ` ${customer.name},  has uploaded profile pics .`,
