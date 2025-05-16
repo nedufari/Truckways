@@ -8,6 +8,7 @@ import {
   OrderCartRepository,
   OrderItemRepository,
   OrderRepository,
+  RiderBidResponseRepository,
 } from './Infrastructure/Persistence/all-order-repositories';
 import { NotificationsService } from 'src/utils/services/notifications.service';
 import { GeneratorService } from 'src/utils/services/generator.service';
@@ -27,8 +28,9 @@ import { PercentageType } from 'src/Enums/percentage.enum';
 import { RatingReviewDto } from './Dto/ratingReview.dto';
 import { Rides } from 'src/Rider/Domain/rides';
 import { PushNotificationsService } from 'src/utils/services/push-notification.service';
-import { TransactionRepository } from 'src/Rider/Infrastructure/Persistence/rider-repository';
+import { RiderRepository, TransactionRepository } from 'src/Rider/Infrastructure/Persistence/rider-repository';
 import { TransactionStatus, TransactionType } from 'src/Enums/transaction.enum';
+import { RiderBidResponseStatus } from './Infrastructure/Persistence/Relational/Entity/bidResponse.entity';
 
 @Injectable()
 export class OrderService {
@@ -40,12 +42,15 @@ export class OrderService {
     private bidRepository: BidRepository,
     private percentageRepository: PercentageConfigRepository,
     private transactionRepositoory: TransactionRepository,
+    private riderRepository:RiderRepository,
+    private riderBidResponseRepository:RiderBidResponseRepository,
     private responseService: ResponseService,
     private notificationService: NotificationsService,
     private generatorService: GeneratorService,
     private cloudinaryService: CloudinaryService,
     private geolocationService: GeoLocationService,
     private paystackService: PaystackService,
+
     private readonly eventsGateway: EventsGateway,
 
     private readonly pushnotificationsService: PushNotificationsService,
@@ -258,6 +263,22 @@ export class OrderService {
           });
 
           const savedBid = await this.bidRepository.save(initialBid);
+          const allRiders = await this.riderRepository.find2();
+          await Promise.all(
+            allRiders.map(async (rider) => {
+              const responseID = `TrkR${await this.generatorService.generateUserID()}`;
+              return  await this.riderBidResponseRepository.create({
+                responseID: responseID,
+                rider: rider,
+                bid: savedBid,
+                status: RiderBidResponseStatus.NO_RESPONSE,
+                isVisible: true,
+                id: 0,
+                respondedAt: undefined
+             
+            })
+          })
+        );
 
           // Emit WebSocket event for new order with initial bid
           this.eventsGateway.emitToAllRiders('newOrder', {

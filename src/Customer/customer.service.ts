@@ -33,13 +33,14 @@ import {
 import { BidEntity } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bids.entity';
 import { Order } from 'src/Order/Domain/order';
 import { EventsGateway } from 'src/utils/gateway/websocket.gateway';
-import { RidesRepository } from 'src/Rider/Infrastructure/Persistence/rider-repository';
+import { RidesRepository, TransactionRepository } from 'src/Rider/Infrastructure/Persistence/rider-repository';
 import { GeneratorService } from 'src/utils/services/generator.service';
 import { CancelRideDto } from 'src/Rider/Dto/dropOff-code.dto';
 import { RatingReviewDto } from 'src/Order/Dto/ratingReview.dto';
 import { Rides } from 'src/Rider/Domain/rides';
 import { PushNotificationsService } from 'src/utils/services/push-notification.service';
 import { StdioPipeNamed } from 'child_process';
+import { Transactions } from 'src/Rider/Domain/transaction';
 @Injectable()
 export class CustomerService {
   constructor(
@@ -50,6 +51,7 @@ export class CustomerService {
     private notificationsService: NotificationsService,
     private geolocationService: GeoLocationService,
     private cartRepository: OrderCartRepository,
+    private transactionRepository:TransactionRepository,
     private orderRepository: OrderRepository,
     private readonly eventsGateway: EventsGateway,
     private ridesRepo: RidesRepository,
@@ -702,6 +704,53 @@ export class CustomerService {
     } catch (error) {
       return this.responseService.internalServerError(
         'Error fetching one order',
+        error.message,
+      );
+    }
+  }
+
+
+  async FetchAllMyTransactions(
+    dto: PaginationDto,
+    customer: CustomerEntity,
+  ): Promise<StandardResponse<{ data: Transactions[]; total: number }>> {
+    try {
+      const { data: transactions, total } =
+        await this.transactionRepository.findRelatedToCustomer(
+          customer.customerID,
+          dto,
+        );
+
+      return this.responseService.success(
+        transactions.length ? 'transactions retrived successfully' : 'No transactions  yet',
+        {
+          data: transactions,
+          total,
+          currentPage: dto.page,
+          pageSize: dto.limit,
+        },
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error fetching orders',
+        error.message,
+      );
+    }
+  }
+
+  async FetchOneTransaction(transactionID: string): Promise<StandardResponse<Transactions>> {
+    try {
+      const order = await this.transactionRepository.findByID(transactionID);
+      if (!order) return this.responseService.notFound('Order not found');
+
+      return this.responseService.success(
+        'single transaction retrieved successfully',
+        order,
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error fetching one transaction',
         error.message,
       );
     }

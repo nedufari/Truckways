@@ -10,6 +10,7 @@ import {
   OrderCartRepository,
   OrderItemRepository,
   OrderRepository,
+  RiderBidResponseRepository,
 } from '../all-order-repositories';
 import {
   BidsRelationalRepository,
@@ -17,7 +18,9 @@ import {
   OrderCartRelationalRepository,
   OrderItemsRelationalRepository,
   OrderRelationalRepository,
+  RiderBidResponseRelationalRepository,
 } from './Repository/all-order.repository';
+import { RiderBidResponseEntity } from './Entity/bidResponse.entity';
 
 @Module({
   imports: [
@@ -27,6 +30,7 @@ import {
       OrderItemsEntity,
       CartItemsEntity,
       OrderCartEntity,
+      RiderBidResponseEntity
     ]),
   ],
   providers: [
@@ -50,7 +54,11 @@ import {
       provide: OrderCartRepository,
       useClass: OrderCartRelationalRepository,
     },
+    {
+      provide:RiderBidResponseRepository,
+      useClass:RiderBidResponseRelationalRepository
+    }
   ],
-  exports:[OrderRepository,OrderItemRepository,OrderCartRepository,CartItemRepository,BidRepository]
+  exports:[OrderRepository,OrderItemRepository,OrderCartRepository,CartItemRepository,BidRepository,RiderBidResponseRepository]
 })
 export class PersitenceRelationalOrderModule {}

@@ -5,6 +5,7 @@ import {
   OrderCartRepository,
   OrderItemRepository,
   OrderRepository,
+  RiderBidResponseRepository,
 } from '../../all-order-repositories';
 import { OrderEntity, OrderItemsEntity } from '../Entity/order.entity';
 import { ILike, Repository } from 'typeorm';
@@ -20,6 +21,9 @@ import { CartItemsMapper, OrderItemsMapper } from '../Mapper/cartItems.mapper';
 import { BidEntity } from '../Entity/bids.entity';
 import { Bid } from 'src/Order/Domain/bids';
 import { BidMapper } from '../Mapper/bids.mapper';
+import { RiderBidResponse } from 'src/Order/Domain/bidResponse';
+import { BidResponseMapper } from '../Mapper/bidResponse.mapper';
+import { RiderBidResponseEntity } from '../Entity/bidResponse.entity';
 
 export class OrderRelationalRepository implements OrderRepository {
   constructor(
@@ -406,4 +410,79 @@ export class BidsRelationalRepository implements BidRepository {
 
     return { data: orders, total };
   }
+}
+
+export class RiderBidResponseRelationalRepository
+  implements RiderBidResponseRepository
+{
+  constructor(
+    @InjectRepository(RiderBidResponseEntity)
+    private bidResponseEntityRepository: Repository<RiderBidResponseEntity>,
+  ) {}
+
+  async create(response: RiderBidResponse): Promise<RiderBidResponse> {
+    const persistenceBid = BidResponseMapper.toPeristence(response);
+    const savedBid =
+      await this.bidResponseEntityRepository.save(persistenceBid);
+    return BidResponseMapper.toDomain(savedBid);
+  }
+
+  async findByRiderAndBid(
+    riderId: string,
+    bidId: string,
+  ): Promise<RiderBidResponse | null> {
+    const bid = await this.bidResponseEntityRepository.findOne({
+      where: { rider: { riderID: riderId }, bid: { bidID: bidId } },
+    });
+    return bid ? BidResponseMapper.toDomain(bid) : null;
+  }
+
+  async findAllByRider(riderid: string): Promise<RiderBidResponse[]> {
+    const result = await this.bidResponseEntityRepository.find({
+      where: { rider: { riderID: riderid } },
+      relations: ['bid', 'bid.order'],
+    });
+    const bids = result.map(BidResponseMapper.toDomain);
+    return bids;
+  }
+
+  async findAllVisibleBids(riderid: string): Promise<RiderBidResponse[]> {
+    const result = await this.bidResponseEntityRepository.find({
+      where: { rider: { riderID: riderid },isVisible:true },
+      relations: ['bid', 'bid.order'],
+    });
+    const bids = result.map(BidResponseMapper.toDomain);
+    return bids;
+  }
+
+  async find(bidID:string): Promise<RiderBidResponse[]> {
+    const result = await this.bidResponseEntityRepository.find({
+      where: { bid:{bidID:bidID}},
+      relations: ['bid', 'bid.order', 'rider'],
+    });
+    const bids = result.map(BidResponseMapper.toDomain);
+    return bids;
+  }
+
+  async update(id: number, bid: Partial<RiderBidResponse>): Promise<RiderBidResponse> {
+    await this.bidResponseEntityRepository.update(
+      id,
+      BidResponseMapper.toPeristence(bid as RiderBidResponse),
+    );
+    const updatedBid = await this.bidResponseEntityRepository.findOne({
+      where: { id: id },
+      relations: ['rider', 'bid','bid.order'],
+    });
+    return BidResponseMapper.toDomain(updatedBid);
+  }
+
+  async updateMany(
+  criteria: any, 
+  updates: Partial<RiderBidResponse>
+): Promise<void> {
+  await this.bidResponseEntityRepository.update(
+    criteria,
+    BidResponseMapper.toPeristence(updates as RiderBidResponse)
+  );
+}
 }

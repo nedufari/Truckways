@@ -44,6 +44,7 @@ import { Role } from 'src/Enums/users.enum';
 import { CancelRideDto } from 'src/Rider/Dto/dropOff-code.dto';
 import { Rides } from 'src/Rider/Domain/rides';
 import { RatingReviewDto } from 'src/Order/Dto/ratingReview.dto';
+import { Transactions } from 'src/Rider/Domain/transaction';
 
 @ApiTags('Customer')
 @ApiBearerAuth()
@@ -499,6 +500,82 @@ export class CustomerController {
     @Req()req
   ): Promise<StandardResponse<{ data: Order[]; total: number }>> {
     return await this.customerService.FetchAllMyOrders(dto,req.user);
+  }
+
+
+
+
+  @Get('one-transaction/:transactionID')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse<Transactions>) },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Transactions),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'fetch one transaction' })
+  async FetccOneTransaction(
+    @Param('transactionID') orderId: string,
+  ): Promise<StandardResponse<Transactions>> {
+    return await this.customerService.FetchOneTransaction(orderId);
+  }
+
+
+
+  @Get('all-my-transactions')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        {
+          $ref: getSchemaPath(StandardResponse<{ data: Transactions[]; total: number }>),
+        },
+        {
+          properties: {
+            payload: {
+              $ref: getSchemaPath(Transactions),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: 'number',
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: 'number',
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: 'string',
+    description: 'Sorting field',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sorting order',
+  })
+  @ApiOperation({ summary: 'all my transactions' })
+  async fetchAllMyTranactions(
+    @Query() dto: PaginationDto,
+    @Req()req
+  ): Promise<StandardResponse<{ data: Transactions[]; total: number }>> {
+    return await this.customerService.FetchAllMyTransactions(dto,req.user);
   }
 
   @Post('testPushNotification')

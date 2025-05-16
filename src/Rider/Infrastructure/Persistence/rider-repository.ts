@@ -13,6 +13,7 @@ export abstract class RiderRepository{
     abstract create(rider:Rider):Promise<Rider>
     abstract findByID(id:number):Promise<Rider | null>
     abstract find(dto:PaginationDto):Promise<{data:Rider[], total:number}>
+    abstract  find2():Promise<Rider[]>
     abstract findRidersForAnnouncement():Promise<Rider[]>
     abstract findByEmail(rider:string):Promise<Rider | null>
     abstract findbyPasswordResetToken (token:string):Promise <Rider|null>;
@@ -58,6 +59,8 @@ export abstract class TransactionRepository{
     abstract findByReference(reference:string):Promise<Transactions | null>
     abstract findByReferenceFinal(reference:string):Promise<Transactions | null>
     abstract find(dto:PaginationDto):Promise<{data:Transactions[], total:number}>
+    abstract findRelatedToCustomer(customerid:string,dto:PaginationDto):Promise<{data:Transactions[], total:number}>
+    abstract findRelatedToRider(riderid:string,dto:PaginationDto):Promise<{data:Transactions[], total:number}>
     abstract save (transaction:Transactions):Promise<Transactions>
     abstract searchTransactions (searchdto:SearchDto):Promise<{data:Transactions[], total:number}>
     abstract executeWithTransaction<T>(

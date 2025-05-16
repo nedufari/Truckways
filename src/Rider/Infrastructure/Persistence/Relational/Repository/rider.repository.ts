@@ -82,10 +82,18 @@ export class RiderRelationalRepository implements RiderRepository {
     return { data: riders, total };
   }
 
+  async find2(): Promise<Rider[]> {
+    const result = await this.riderEntityRepository.find({
+      relations: ['vehicle'],
+    });
+    const riders = result.map(RiderMapper.toDomain);
+    return riders;
+  }
+
   async findRidersForAnnouncement(): Promise<Rider[]> {
     const result = await this.riderEntityRepository.find({
-      where: { isAprroved:true },
-      select: ['email', 'riderID','deviceToken'],
+      where: { isAprroved: true },
+      select: ['email', 'riderID', 'deviceToken'],
     });
     const wallets = result.map(RiderMapper.toDomain);
     return wallets;
@@ -272,9 +280,6 @@ export class BankRelationalRepository implements BankRepository {
     return { data: banks, total };
   }
 
-
-
-
   async update(id: string, bank: Partial<Bank>): Promise<Bank> {
     await this.bankEntityRepository.update(
       id,
@@ -324,7 +329,7 @@ export class WalletRelationalRepository implements WalletRepository {
   async findByRiderID(id: string): Promise<Wallet> {
     const wallet = await this.walletEntityRepository.findOne({
       where: { rider: { riderID: id } },
-      relations: ['rider','rider.my_wallet'],
+      relations: ['rider', 'rider.my_wallet'],
     });
     return wallet ? WalletMapper.toDomain(wallet) : null;
   }
@@ -367,13 +372,10 @@ export class WalletRelationalRepository implements WalletRepository {
   }
 }
 
-
 export class TransactionRelationalRepository implements TransactionRepository {
   private repository: Repository<TransactionEntity>;
 
-  constructor(
-    @InjectDataSource() private readonly dataSource: DataSource
-  ) {
+  constructor(@InjectDataSource() private readonly dataSource: DataSource) {
     this.repository = this.dataSource.getRepository(TransactionEntity);
   }
 
@@ -392,14 +394,17 @@ export class TransactionRelationalRepository implements TransactionRepository {
 
   async findByReference(reference: string): Promise<Transactions> {
     const transaction = await this.repository.findOne({
-      where: { reference: reference , metadata:{type:'wallet_funding'}},
+      where: { reference: reference, metadata: { type: 'wallet_funding' } },
     });
     return transaction ? TransactionMapper.toDomain(transaction) : null;
   }
 
   async findByReferenceFinal(reference: string): Promise<Transactions> {
     const transaction = await this.repository.findOne({
-      where: { reference: reference , metadata:{type:'final_wallet_funding'}},
+      where: {
+        reference: reference,
+        metadata: { type: 'final_wallet_funding' },
+      },
     });
     return transaction ? TransactionMapper.toDomain(transaction) : null;
   }
@@ -418,11 +423,46 @@ export class TransactionRelationalRepository implements TransactionRepository {
     return { data: transactions, total };
   }
 
+  async findRelatedToCustomer(
+    customerId:string,
+    dto: PaginationDto,
+  ): Promise<{ data: Transactions[]; total: number }> {
+    const { page, limit, sortBy, sortOrder } = dto;
+    const [result, total] = await this.repository.findAndCount({
+      where:{customer:{customerID:customerId}},
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sortBy]: sortOrder },
+      relations: ['rider'],
+    });
+    const transactions = result.map(TransactionMapper.toDomain);
+    return { data: transactions, total };
+  }
+
+  async findRelatedToRider(
+    riderID:string,
+    dto: PaginationDto,
+  ): Promise<{ data: Transactions[]; total: number }> {
+    const { page, limit, sortBy, sortOrder } = dto;
+    const [result, total] = await this.repository.findAndCount({
+      where:{rider:{riderID:riderID}},
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sortBy]: sortOrder },
+      relations: ['rider'],
+    });
+    const transactions = result.map(TransactionMapper.toDomain);
+    return { data: transactions, total };
+  }
+
   async save(transaction: Transactions): Promise<Transactions> {
     const persistenceTransaction = TransactionMapper.toPersistence(transaction);
-    const savedTransaction = await this.repository.save(persistenceTransaction, {
-      reload: true,
-    });
+    const savedTransaction = await this.repository.save(
+      persistenceTransaction,
+      {
+        reload: true,
+      },
+    );
     return TransactionMapper.toDomain(savedTransaction);
   }
 
@@ -461,14 +501,16 @@ export class TransactionRelationalRepository implements TransactionRepository {
   }
 
   async executeWithTransaction<T>(
-    operation: (repository: Repository<TransactionEntity>) => Promise<T>
+    operation: (repository: Repository<TransactionEntity>) => Promise<T>,
   ): Promise<T> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const result = await operation(queryRunner.manager.getRepository(TransactionEntity));
+      const result = await operation(
+        queryRunner.manager.getRepository(TransactionEntity),
+      );
       await queryRunner.commitTransaction();
       return result;
     } catch (error) {
@@ -479,135 +521,120 @@ export class TransactionRelationalRepository implements TransactionRepository {
     }
   }
 }
-  export class RidesRelationalRepository implements RidesRepository {
-    constructor(
-      @InjectRepository(RidesEntity)
-      private ridesEntityRepository: Repository<RidesEntity>,
-    ) {}
-  
-    async create(transaction: Rides): Promise<Rides> {
-      const persistencetransaction = RidesMapper.toPerisitence(transaction);
-      const savedTransaction = await this.ridesEntityRepository.save(
-        persistencetransaction,
-      );
-      return RidesMapper.toDomain(savedTransaction);
-    }
-  
-    async findByID(id: string): Promise<Rides> {
-      const wallet = await this.ridesEntityRepository.findOne({
-        where: { ridesID: id },
-        relations: ['rider','order','order.items'],
+export class RidesRelationalRepository implements RidesRepository {
+  constructor(
+    @InjectRepository(RidesEntity)
+    private ridesEntityRepository: Repository<RidesEntity>,
+  ) {}
+
+  async create(transaction: Rides): Promise<Rides> {
+    const persistencetransaction = RidesMapper.toPerisitence(transaction);
+    const savedTransaction = await this.ridesEntityRepository.save(
+      persistencetransaction,
+    );
+    return RidesMapper.toDomain(savedTransaction);
+  }
+
+  async findByID(id: string): Promise<Rides> {
+    const wallet = await this.ridesEntityRepository.findOne({
+      where: { ridesID: id },
+      relations: ['rider', 'order', 'order.items'],
+    });
+    return wallet ? RidesMapper.toDomain(wallet) : null;
+  }
+
+  async findByIDRelatedtoRider(id: string, riderId: string): Promise<Rides> {
+    const wallet = await this.ridesEntityRepository.findOne({
+      where: { ridesID: id, rider: { riderID: riderId } },
+      relations: ['rider', 'order', 'order.items'],
+    });
+    return wallet ? RidesMapper.toDomain(wallet) : null;
+  }
+
+  async find(dto: PaginationDto): Promise<{ data: Rides[]; total: number }> {
+    const { page, limit, sortBy, sortOrder } = dto;
+    const [result, total] = await this.ridesEntityRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sortBy]: sortOrder },
+      relations: ['rider', 'order', 'order.items'],
+    });
+    const wallets = result.map(RidesMapper.toDomain);
+    return { data: wallets, total };
+  }
+
+  async findLongRunningRides(cutoffDate: Date): Promise<Rides[]> {
+    return this.ridesEntityRepository.find({
+      where: {
+        status: RideStatus.ONGOING,
+        createdAT: LessThan(cutoffDate),
+        reminderSent: false,
+      },
+      relations: ['rider', 'order'],
+    });
+  }
+
+  async save(transaction: Rides): Promise<Rides> {
+    const persistenceWallet = RidesMapper.toPerisitence(transaction);
+    const savedWallet = await this.ridesEntityRepository.save(
+      persistenceWallet,
+      { reload: true },
+    );
+
+    return RidesMapper.toDomain(savedWallet);
+  }
+
+  async findAllRelatedToARider(
+    dto: PaginationDto,
+    riderId: string,
+  ): Promise<{ data: Rides[]; total: number }> {
+    const { page, limit, sortBy, sortOrder } = dto;
+    const [result, total] = await this.ridesEntityRepository.findAndCount({
+      where: { rider: { riderID: riderId } },
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sortBy]: sortOrder },
+      relations: ['rider', 'order', 'order.items'],
+    });
+    const wallets = result.map(RidesMapper.toDomain);
+    return { data: wallets, total };
+  }
+
+  async searchRides(
+    searchDto: SearchDto,
+  ): Promise<{ data: Rides[]; total: number }> {
+    const { keyword, page, Perpage, sort, sortOrder } = searchDto;
+
+    const qb = this.ridesEntityRepository.createQueryBuilder('ride');
+
+    if (keyword) {
+      qb.where('ride.ridesID ILIKE :keyword', {
+        keyword: `%${keyword}%`,
       });
-      return wallet ? RidesMapper.toDomain(wallet) : null;
     }
 
-    async findByIDRelatedtoRider(id: string, riderId:string): Promise<Rides> {
-      const wallet = await this.ridesEntityRepository.findOne({
-        where: { ridesID: id , rider:{riderID:riderId}},
-        relations: ['rider','order','order.items'],
-      });
-      return wallet ? RidesMapper.toDomain(wallet) : null;
-    }
-  
-  
-  
-    async find(
-      dto: PaginationDto,
-    ): Promise<{ data: Rides[]; total: number }> {
-      const { page, limit, sortBy, sortOrder } = dto;
-      const [result, total] = await this.ridesEntityRepository.findAndCount(
-        {
-          skip: (page - 1) * limit,
-          take: limit,
-          order: { [sortBy]: sortOrder },
-          relations: ['rider','order','order.items'],
-        },
-      );
-      const wallets = result.map(RidesMapper.toDomain);
-      return { data: wallets, total };
+    // Sorting
+    qb.orderBy(`ride.${sort}`, sortOrder);
+
+    // Pagination
+    if (page && Perpage) {
+      qb.skip((page - 1) * Perpage).take(Perpage);
     }
 
-    async findLongRunningRides(cutoffDate: Date): Promise<Rides[]> {
-      return this.ridesEntityRepository.find({
-        where: {
-          status: RideStatus.ONGOING,
-          createdAT: LessThan(cutoffDate),
-          reminderSent: false
-        },
-        relations: ['rider', 'order']
-      });
-    }
-  
-    async save(transaction: Rides): Promise<Rides> {
-      const persistenceWallet = RidesMapper.toPerisitence(transaction);
-      const savedWallet = await this.ridesEntityRepository.save(
-        persistenceWallet,
-        { reload: true },
-      );
-  
-      return RidesMapper.toDomain(savedWallet);
-    }
+    // Execute the query
+    const [rides, total] = await qb.getManyAndCount();
 
+    return { data: rides, total };
+  }
 
-
-    async findAllRelatedToARider(
-      dto: PaginationDto,
-      riderId:string
-    ): Promise<{ data: Rides[]; total: number }> {
-      const { page, limit, sortBy, sortOrder } = dto;
-      const [result, total] = await this.ridesEntityRepository.findAndCount(
-        {
-          where:{rider:{riderID:riderId}},
-          skip: (page - 1) * limit,
-          take: limit,
-          order: { [sortBy]: sortOrder },
-          relations: ['rider','order','order.items'],
-        },
-      );
-      const wallets = result.map(RidesMapper.toDomain);
-      return { data: wallets, total };
-    }
-  
-
-  
-  
-    async searchRides(
-      searchDto: SearchDto,
-    ): Promise<{ data: Rides[]; total: number }> {
-      const { keyword, page, Perpage, sort, sortOrder } = searchDto;
-  
-      const qb = this.ridesEntityRepository.createQueryBuilder('ride');
-  
-      if (keyword) {
-        qb.where('ride.ridesID ILIKE :keyword', {
-          keyword: `%${keyword}%`,
-        });
-   
-      }
-  
-      // Sorting
-      qb.orderBy(`ride.${sort}`, sortOrder);
-  
-      // Pagination
-      if (page && Perpage) {
-        qb.skip((page - 1) * Perpage).take(Perpage);
-      }
-  
-      // Execute the query
-      const [rides, total] = await qb.getManyAndCount();
-  
-      return { data: rides, total };
-    }
-
-
-    async update(id: number, wallet: Partial<Rides>): Promise<Rides> {
-      await this.ridesEntityRepository.update(
-        id,
-        WalletMapper.toPersistence(wallet as Wallet),
-      );
-      const updatedWallet = await this.ridesEntityRepository.findOne({
-        where: { id: id },
-      });
-      return RidesMapper.toDomain(updatedWallet);
-    }
+  async update(id: number, wallet: Partial<Rides>): Promise<Rides> {
+    await this.ridesEntityRepository.update(
+      id,
+      WalletMapper.toPersistence(wallet as Wallet),
+    );
+    const updatedWallet = await this.ridesEntityRepository.findOne({
+      where: { id: id },
+    });
+    return RidesMapper.toDomain(updatedWallet);
+  }
 }

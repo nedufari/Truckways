@@ -25,6 +25,7 @@ import { Transactions } from './Rider/Domain/transaction';
 import { Rides } from './Rider/Domain/rides';
 import { Admin } from './Admin/Domain/admin';
 import { PercentageConfig } from './Admin/Domain/percentage';
+import { RiderBidResponse } from './Order/Domain/bidResponse';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
@@ -77,7 +78,8 @@ async function bootstrap() {
       Transactions,
       Admin,
       Rides,
-      PercentageConfig
+      PercentageConfig,
+      RiderBidResponse
       
       
     ],

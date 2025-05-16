@@ -1,3 +1,4 @@
+import { RiderBidResponse } from 'src/Order/Domain/bidResponse';
 import { Bid } from 'src/Order/Domain/bids';
 import { Order } from 'src/Order/Domain/order';
 import { OrderCart } from 'src/Order/Domain/order-cart';
@@ -51,4 +52,18 @@ export abstract class BidRepository {
   abstract update(id: number, item: Partial<Bid>): Promise<Bid>;
   abstract save(bid: Bid): Promise<Bid>;
   abstract searchBid(searchdto:SearchDto):Promise<{data:Bid[], total:number}>
+}
+
+export abstract class RiderBidResponseRepository{
+
+  abstract create(bidResponse: RiderBidResponse): Promise<RiderBidResponse>;
+  abstract findByRiderAndBid(riderId: string, bidId:string): Promise<RiderBidResponse | null>;
+  abstract findAllByRider(riderid:string):Promise<RiderBidResponse[]>
+  abstract find (bidid:string) :Promise<RiderBidResponse[]>
+  abstract update (id: number, bidResponse: Partial<RiderBidResponse>):Promise<RiderBidResponse>;
+  abstract findAllVisibleBids(riderid:string,):Promise<RiderBidResponse[]>
+  abstract updateMany(criteria: any, updates: Partial<RiderBidResponse>): Promise<void>;
+
+
+  
 }

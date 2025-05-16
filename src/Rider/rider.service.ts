@@ -3,6 +3,7 @@ import {
   BankRepository,
   RiderRepository,
   RidesRepository,
+  TransactionRepository,
   VehicleRepository,
   WalletRepository,
 } from './Infrastructure/Persistence/rider-repository';
@@ -29,6 +30,7 @@ import {
   BidRepository,
   OrderItemRepository,
   OrderRepository,
+  RiderBidResponseRepository,
 } from 'src/Order/Infrastructure/Persistence/all-order-repositories';
 import { PaginationDto } from 'src/utils/shared-dto/pagination.dto';
 import { Bid } from 'src/Order/Domain/bids';
@@ -54,6 +56,10 @@ import { CancelRideDto, DropOffCodeDto } from './Dto/dropOff-code.dto';
 import { OnboardingAction, RiderStatus } from 'src/Enums/users.enum';
 import { WalletService } from './wallet/wallet.service';
 import { PushNotificationsService } from 'src/utils/services/push-notification.service';
+import { RiderBidResponseStatus } from 'src/Order/Infrastructure/Persistence/Relational/Entity/bidResponse.entity';
+import { RiderBidResponse } from 'src/Order/Domain/bidResponse';
+import { Not } from 'typeorm';
+import { Transactions } from './Domain/transaction';
 @Injectable()
 export class RiderService {
   constructor(
@@ -62,7 +68,9 @@ export class RiderService {
     private orderItemRepo: OrderItemRepository,
     private bankRepository: BankRepository,
     private walletRepository: WalletRepository,
+    private riderBidResponseRepository:RiderBidResponseRepository,
     private vehicleRepository: VehicleRepository,
+    private  transactionRepository: TransactionRepository,
     private responseService: ResponseService,
     private cloudinaryService: CloudinaryService,
     private notificationsService: NotificationsService,
@@ -515,25 +523,49 @@ export class RiderService {
 
       if (bid.bidStatus !== BidStatus.BID_SENT) {
         return this.responseService.badRequest(
-          'there must be a bid sent first before you can take any action',
+          'This Bid is no longer Available',
         );
       }
 
-      // Start WebSocket conversation between rider and customer
-      this.eventsGateway.startconversation(
-        bid.order.orderID,
-        rider.riderID,
-        bid.order.customer.customerID,
-      );
+      const existingResponse = await this.riderBidResponseRepository.findByRiderAndBid(
+        rider.riderID, bid.bidID
+      )
+
+      if (existingResponse && existingResponse.status !== RiderBidResponseStatus.NO_RESPONSE) {
+        return this.responseService.badRequest(
+          'You have already responded to this bid'
+        );
+      }
+
+      //create or update  rider's reponse to this bid 
+      const responseID = existingResponse?.responseID || `TrkR${await this.generatorService.generateUserID()}`;
+
 
       const action = dto.doYouAccept ? BidAction.ACCEPT : BidAction.DECLINE;
 
-      const result = await this.processBidAction(action, bid, rider);
 
-      return this.responseService.success(result.message, {
-        success: result.success,
-        message: result.message,
-      });
+      if (action === BidAction.ACCEPT) {
+        // Start WebSocket conversation between rider and customer
+        this.eventsGateway.startconversation(
+          bid.order.orderID,
+          rider.riderID,
+          bid.order.customer.customerID,
+        );
+        
+        // Process acceptance
+        const result = await this.processAcceptBid(bid, rider, existingResponse, responseID);
+        return this.responseService.success(result.message, {
+          success: result.success,
+          message: result.message,
+        });
+      } else {
+        // Process decline
+        const result = await this.processDeclineBid(bid, rider, existingResponse, responseID);
+        return this.responseService.success(result.message, {
+          success: result.success,
+          message: result.message,
+        });
+      }
     } catch (error) {
       console.error('RiderAcceptOrDeclineBid error:', error);
       return this.responseService.internalServerError(
@@ -543,143 +575,205 @@ export class RiderService {
     }
   }
 
-  private async processBidAction(
-    action: BidAction,
+
+  private async processAcceptBid(
     bid: BidEntity,
     rider: RiderEntity,
+    existingResponse: RiderBidResponse | undefined,
+    responseID: string,
   ): Promise<BidActionResult> {
-    const actions = {
-      [BidAction.ACCEPT]: async (): Promise<BidActionResult> => {
-        await this.bidRepository.update(bid.id, {
-          bidStatus: BidStatus.BID_ACCEPTED,
-          bidTypeAccepted: BidTypeAccepted.INITIAL,
-          acceptedAT: new Date(),
-          rider: rider,
-        });
-
-        //update the rorder with rider and the value
-        const order = await this.orderRepository.findByID(bid.order.orderID);
-        order.accepted_bid = bid.initialBid_value;
-        order.Rider = bid.rider;
-        await this.orderRepository.save(order);
-
-        //create a ride
-        const ridesID = `TrkRd${await this.generatorService.generateUserID()}`;
-        await this.ridesRepo.create({
-          id: 0,
-          ridesID: ridesID,
-          milestone: undefined,
-          status: RideStatus.PENDING,
-          rider: rider,
-          order: order,
-          checkpointStatus: undefined,
-          at_dropoff_locationAT: undefined,
-          at_pickup_locationAT: undefined,
-          enroute_to_dropoff_locationAT: undefined,
-          enroute_to_pickup_locationAT: undefined,
-          dropped_off_parcelAT: undefined,
-          reason_for_cancelling_ride: '',
-          isCancelled: false,
-          cancelledAt: undefined,
-          picked_up_parcelAT: undefined,
-          createdAT: new Date(),
-          reminderSent:false,
-          review:'',
-          rating:0
-        });
-
-        // Emit WebSocket event for accepting initial bid
-        this.eventsGateway.emitToconversation(
-          bid.order.orderID,
-          'acceptInitialBid',
-          {
-            orderId: bid.order.orderID,
-            bidstatus: true,
-            acceptedAmount: bid.initialBid_value,
-            riderDetails: {
-              riderId: rider.riderID,
-              name: rider.name,
-            },
-            timestamp: new Date().getTime(),
-          },
-        );
-
-        await this.notificationsService.create({
-          message: ` ${rider.name},  has accepted a bid placed by ${bid.order.customer.name} .`,
-          subject: 'Bid Accepted',
-          account: rider.riderID,
-        });
-
-        await this.notificationsService.create({
-          message: ` ${rider.name},  has declined your bid for order ${bid.order.orderID} .`,
-          subject: 'Bid Accepted',
-          account: bid.order.customer.customerID,
-        });
-
-        //push notification
-        this.pushNotificationService.sendPushNotification(
-          bid.order.customer.deviceToken,
-          'Bid Accepted',
-          'openning bid accepted'
-        )
-
-        return {
-          success: true,
-          message:
-            'Bid accepted successfully, please proceed to making payment',
-        };
+    // Update rider's response to ACCEPTED
+    if (existingResponse) {
+      await this.riderBidResponseRepository.update(existingResponse.id, {
+        status: RiderBidResponseStatus.ACCEPTED,
+        respondedAt: new Date(),
+      });
+    } else {
+      await this.riderBidResponseRepository.create({
+        responseID: responseID,
+        rider: rider,
+        bid: bid,
+        status: RiderBidResponseStatus.ACCEPTED,
+        respondedAt: new Date(),
+        isVisible: true,
+        id: 0
+      });
+     
+    }
+  
+    // Update the bid itself
+    await this.bidRepository.update(bid.id, {
+      bidStatus: BidStatus.BID_ACCEPTED,
+      bidTypeAccepted: BidTypeAccepted.INITIAL,
+      acceptedAT: new Date(),
+      rider: rider,
+    });
+  
+    // Update the order
+    const order = await this.orderRepository.findByID(bid.order.orderID);
+    order.accepted_bid = bid.initialBid_value;
+    order.Rider = rider;
+    await this.orderRepository.save(order);
+  
+   // Hide this bid from all other riders
+   await this.hideOtherRiderBids(bid.bidID, rider.riderID);
+  
+    // Create a ride
+    const ridesID = `TrkRd${await this.generatorService.generateUserID()}`;
+    await this.ridesRepo.create({
+      id: 0,
+      ridesID: ridesID,
+      milestone: undefined,
+      status: RideStatus.PENDING,
+      rider: rider,
+      order: order,
+      checkpointStatus: undefined,
+      at_dropoff_locationAT: undefined,
+      at_pickup_locationAT: undefined,
+      enroute_to_dropoff_locationAT: undefined,
+      enroute_to_pickup_locationAT: undefined,
+      dropped_off_parcelAT: undefined,
+      reason_for_cancelling_ride: '',
+      isCancelled: false,
+      cancelledAt: undefined,
+      picked_up_parcelAT: undefined,
+      createdAT: new Date(),
+      reminderSent: false,
+      review: '',
+      rating: 0
+    });
+  
+    // Emit WebSocket event for accepting initial bid
+    this.eventsGateway.emitToconversation(
+      bid.order.orderID,
+      'acceptInitialBid',
+      {
+        orderId: bid.order.orderID,
+        bidstatus: true,
+        acceptedAmount: bid.initialBid_value,
+        riderDetails: {
+          riderId: rider.riderID,
+          name: rider.name,
+        },
+        timestamp: new Date().getTime(),
       },
-
-      [BidAction.DECLINE]: async (): Promise<BidActionResult> => {
-        await this.bidRepository.update(bid.id, {
-          bidStatus: BidStatus.BID_DECLINED,
-          bidTypeAccepted: BidTypeAccepted.INITIAL,
-          declinedAT: new Date(),
-        });
-
-        // Emit WebSocket event for declining initial bid
-        this.eventsGateway.emitToconversation(
-          bid.order.orderID,
-          'declineInitialBid',
-          {
-            orderId: bid.order.orderID,
-            bidstatus: false,
-            riderDetails: {
-              riderId: rider.riderID,
-              name: rider.name,
-            },
-            timestamp: new Date().getTime(),
-          },
-        );
-
-        await this.notificationsService.create({
-          message: ` ${rider.name},  has declined a bid placed by ${bid.order.customer.name}.`,
-          subject: 'Bid Declined',
-          account: rider.riderID,
-        });
-
-        await this.notificationsService.create({
-          message: ` ${rider.name},  has declined your bid for order ${bid.order.orderID} .`,
-          subject: 'Bid Declined',
-          account: bid.order.customer.customerID,
-        });
-
-         //push notification
-         this.pushNotificationService.sendPushNotification(
-          bid.order.customer.deviceToken,
-          'Bid Declined',
-          'openning bid declined'
-        )
-
-        return {
-          success: true,
-          message: 'Bid declined successfully, please see other offers',
-        };
-      },
+    );
+  
+    // Create notifications
+    await this.notificationsService.create({
+      message: `${rider.name} has accepted a bid placed by ${bid.order.customer.name}.`,
+      subject: 'Bid Accepted',
+      account: rider.riderID,
+    });
+  
+    await this.notificationsService.create({
+      message: `${rider.name} has accepted your bid for order ${bid.order.orderID}.`,
+      subject: 'Bid Accepted',
+      account: bid.order.customer.customerID,
+    });
+  
+    // Push notification
+    this.pushNotificationService.sendPushNotification(
+      bid.order.customer.deviceToken,
+      'Bid Accepted',
+      'Opening bid accepted'
+    );
+  
+    return {
+      success: true,
+      message: 'Bid accepted successfully, please proceed to making payment',
     };
-
-    return actions[action]();
   }
+
+  private async hideOtherRiderBids(bidID: string, acceptingRiderID: string): Promise<void> {
+    // Get all responses for this bid from riders other than the accepting rider
+    const otherResponses = await this.riderBidResponseRepository.find(bidID);
+    
+    // Filter to get only responses from other riders
+    const otherRiderResponses = otherResponses.filter(
+      response => response.rider.riderID !== acceptingRiderID
+    );
+    
+    // Update each other rider's response to set isVisible = false
+    for (const response of otherRiderResponses) {
+      await this.riderBidResponseRepository.update(response.id, {
+        isVisible: false
+      });
+      
+     
+    }
+  }
+
+
+
+private async processDeclineBid(
+  bid: BidEntity,
+  rider: RiderEntity,
+  existingResponse: RiderBidResponse | undefined,
+  responseID: string,
+): Promise<BidActionResult> {
+  // Update rider's response to DECLINED
+  if (existingResponse) {
+    await this.riderBidResponseRepository.update(existingResponse.id, {
+      status: RiderBidResponseStatus.DECLINED,
+      respondedAt: new Date(),
+      isVisible: false, // Hide this bid from this rider
+    });
+  } else {
+    await this.riderBidResponseRepository.create({
+      responseID: responseID,
+      rider: rider,
+      bid: bid,
+      status: RiderBidResponseStatus.DECLINED,
+      respondedAt: new Date(),
+      isVisible: false,
+      id: 0
+    });
+   
+  }
+
+  
+
+  // Create notifications
+  await this.notificationsService.create({
+    message: `You have declined a bid for order ${bid.order.orderID}.`,
+    subject: 'Bid Declined',
+    account: rider.riderID,
+  });
+
+  // No need to notify customer when a rider declines
+  // Only notify when all riders have declined
+
+  // Check if all riders have declined this bid
+  const allResponses = await this.riderBidResponseRepository.find(bid.bidID);
+  
+  const allDeclined = allResponses.every(
+    response => response.status === RiderBidResponseStatus.DECLINED
+  );
+
+  if (allDeclined) {
+    // If all riders have declined, notify the customer
+    await this.notificationsService.create({
+      message: `All riders have declined your bid for order ${bid.order.orderID}.`,
+      subject: 'All Bids Declined',
+      account: bid.order.customer.customerID,
+    });
+    
+    // Push notification
+    this.pushNotificationService.sendPushNotification(
+      bid.order.customer.deviceToken,
+      'All Bids Declined',
+      'No riders available for your order'
+    );
+  }
+
+  return {
+    success: true,
+    message: 'Bid declined successfully',
+  };
+}
+
+
 
   async CounterBid(
     rider: RiderEntity,
@@ -692,7 +786,7 @@ export class RiderService {
 
       if (bid.bidStatus === BidStatus.BID_ACCEPTED)
         return this.responseService.badRequest(
-          'this bis has already been accepted , so you cannot counter',
+          'this bid has already been accepted , so you cannot counter',
         );
 
       //we can have multiple counters from different riders so we wont set an is countered restrain
@@ -814,6 +908,30 @@ export class RiderService {
       console.error(error);
       return this.responseService.internalServerError(
         'Error while cancelling ride',
+      );
+    }
+  }
+
+  async GetAvailableBidsForRider(
+    rider:RiderEntity,
+  ): Promise<StandardResponse<Bid[]>> {
+    try {
+      // Get all rider's bid responses
+      const riderResponses = await this.riderBidResponseRepository.findAllVisibleBids(rider.riderID)
+      // Filter to get only bids with BID_SENT status
+      const availableBids = riderResponses
+        .filter(response => response.bid.bidStatus === BidStatus.BID_SENT)
+        .map(response => response.bid);
+  
+      return this.responseService.success(
+        'Available bids retrieved successfully',
+        availableBids
+      );
+    } catch (error) {
+      console.error('GetAvailableBidsForRider error:', error);
+      return this.responseService.internalServerError(
+        'Error retrieving available bids',
+        error.message
       );
     }
   }
@@ -1213,6 +1331,54 @@ export class RiderService {
     } catch (error) {
       return this.responseService.internalServerError(
         'Error fetching one ride',
+        error.message,
+      );
+    }
+  }
+
+
+
+  async FetchAllMyTransactions(
+    dto: PaginationDto,
+    customer: RiderEntity,
+  ): Promise<StandardResponse<{ data: Transactions[]; total: number }>> {
+    try {
+      const { data: transactions, total } =
+        await this.transactionRepository.findRelatedToRider(
+          customer.riderID,
+          dto,
+        );
+
+      return this.responseService.success(
+        transactions.length ? 'transactions retrived successfully' : 'No transactions  yet',
+        {
+          data: transactions,
+          total,
+          currentPage: dto.page,
+          pageSize: dto.limit,
+        },
+      );
+    } catch (error) {
+      console.error(error);
+      return this.responseService.internalServerError(
+        'Error fetching transactions',
+        error.message,
+      );
+    }
+  }
+
+  async FetchOneTransaction(transactionID: string): Promise<StandardResponse<Transactions>> {
+    try {
+      const order = await this.transactionRepository.findByID(transactionID);
+      if (!order) return this.responseService.notFound('Transaction not found');
+
+      return this.responseService.success(
+        'single transaction retrieved successfully',
+        order,
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error fetching one transaction',
         error.message,
       );
     }
