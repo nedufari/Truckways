@@ -371,7 +371,7 @@ export class OrderService {
 
       const transactionID = `TRKT${await this.generatorService.generateUserID()}`;
 
-      const callbackUrl = `http://localhost:4000/api/v1/truckways/v1.0/order/payment/callback?reference=${transactionID}`;
+      const callbackUrl = `https://truckways.onrender.com/api/v1/truckways/v1.0/order/payment/callback?reference=${transactionID}`;
 
 
       const paymentResponse = await this.paystackService.PayForOrder(
