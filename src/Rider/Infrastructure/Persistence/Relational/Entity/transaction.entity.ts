@@ -58,11 +58,11 @@ export class TransactionEntity {
   createdAT: Date;
 
   @ApiProperty({ type: String })
-  @Column({ unique: true })
+  @Column({ nullable:true })
   reference: string;
 
   @ApiProperty({ type: String })
-  @Column({ unique: true })
+  @Column({ nullable:true })
   description: string;
 
   @ApiProperty({

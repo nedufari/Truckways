@@ -371,7 +371,7 @@ export class OrderService {
 
       const transactionID = `TRKT${await this.generatorService.generateUserID()}`;
 
-      const callbackUrl = `https://truckways.onrender.com/api/v1/truckways/v1.0/order/payment/callback?reference=${transactionID}`;
+      const callbackUrl = `http://localhost:4000/api/v1/truckways/v1.0/order/payment/callback?reference=${transactionID}`;
 
 
       const paymentResponse = await this.paystackService.PayForOrder(
@@ -387,7 +387,7 @@ export class OrderService {
       // Create transaction
       await this.transactionRepositoory.create({
         transactionID,
-        amount: order.accepted_bid,
+        amount: totalPaymentAmount,
         type: TransactionType.DEBIT,
         status: TransactionStatus.PENDING,
         reference: transactionID, // Use undefined to match your previous implementation
@@ -496,10 +496,12 @@ export class OrderService {
 
           //fund wallet 
 
-          await this.walletService.FundWallet(
-            order.Rider.riderID,
-            order.orderID
-          );
+          try {
+            await this.walletService.FundWallet(order.Rider.riderID, order.orderID);
+          } catch (walletError) {
+            console.error('Wallet funding failed:', walletError);
+            
+          }
 
           await this.notificationService.create({
             subject: `${transaction.type} successful Payment Notification`,

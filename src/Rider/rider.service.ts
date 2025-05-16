@@ -923,8 +923,8 @@ private async processDeclineBid(
         .filter(response => response.bid.bidStatus === BidStatus.BID_SENT)
         .map(response => response.bid);
   
-      return this.responseService.success(
-        'Available bids retrieved successfully',
+      return this.responseService.success(availableBids.length > 0 ?
+        'Available bids retrieved successfully':'no available bids found at the moment for this rider',
         availableBids
       );
     } catch (error) {
@@ -1340,12 +1340,12 @@ private async processDeclineBid(
 
   async FetchAllMyTransactions(
     dto: PaginationDto,
-    customer: RiderEntity,
+    rider: RiderEntity,
   ): Promise<StandardResponse<{ data: Transactions[]; total: number }>> {
     try {
       const { data: transactions, total } =
         await this.transactionRepository.findRelatedToRider(
-          customer.riderID,
+          rider.riderID,
           dto,
         );
 

@@ -230,19 +230,20 @@ export class OrderController {
 
   @Get('payment/callback')
   async handlePaymentCallback(
-    @Query('reference') reference: string,
-    @Query('trxref') trxref: string,
+    @Query('reference') reference: string,  // you can still log or return this…
+    @Query('trxref') trxref: string,        // ← this is what you actually want
   ) {
-    // Process payment immediately
+    // use trxref, not reference
     const result = await this.orderService.processEventPayment(trxref);
-
-    // Simple status mapping
+  
     const status = result.success ? 'success' : 'failed';
-
+  
+    // echo back the trxref you used
     return {
-      message: `payment_status=${status}&reference=${reference}`,
+      message: `payment_status=${status}&reference=${trxref}`,
     };
   }
+  
 }
 
 //TrkOBMvhTw

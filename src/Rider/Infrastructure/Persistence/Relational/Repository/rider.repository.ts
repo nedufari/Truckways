@@ -394,7 +394,8 @@ export class TransactionRelationalRepository implements TransactionRepository {
 
   async findByReference(reference: string): Promise<Transactions> {
     const transaction = await this.repository.findOne({
-      where: { reference: reference, metadata: { type: 'wallet_funding' } },
+      where: {  metadata: { type: 'wallet_funding', orderReference:reference } },
+      relations:['rider']
     });
     return transaction ? TransactionMapper.toDomain(transaction) : null;
   }
@@ -402,8 +403,8 @@ export class TransactionRelationalRepository implements TransactionRepository {
   async findByReferenceFinal(reference: string): Promise<Transactions> {
     const transaction = await this.repository.findOne({
       where: {
-        reference: reference,
-        metadata: { type: 'final_wallet_funding' },
+        
+        metadata: { type: 'final_wallet_funding' ,orderReference:reference},
       },
     });
     return transaction ? TransactionMapper.toDomain(transaction) : null;

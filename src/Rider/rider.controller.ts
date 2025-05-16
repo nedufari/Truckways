@@ -340,7 +340,7 @@ export class RiderController {
   @ApiBearerAuth()
   @UseGuards(JwtGuard, RoleGuard)
   @Roles(Role.RIDER)
-  @Get('all-available-bids')
+  @Get('all-available-bids2')
   @ApiOkResponse({
     schema: {
       allOf: [
@@ -885,7 +885,9 @@ export class RiderController {
     return await this.riderService.FetchAllrides(req.user, dto);
   }
 
-
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+  @Roles(Role.RIDER)
   @Get('one-transaction/:transactionID')
   @ApiOkResponse({
     schema: {
@@ -909,7 +911,9 @@ export class RiderController {
   }
 
 
-
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+  @Roles(Role.RIDER)
   @Get('all-my-transactions')
   @ApiOkResponse({
     schema: {
@@ -959,7 +963,9 @@ export class RiderController {
     return await this.riderService.FetchAllMyTransactions(dto,req.user);
   }
 
-
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RoleGuard)
+  @Roles(Role.RIDER)
   @Get('all-available-bids')
   @ApiOkResponse({
     schema: {
