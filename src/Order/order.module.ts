@@ -17,6 +17,7 @@ import { PushNotificationsService } from 'src/utils/services/push-notification.s
 import { RiderEntity } from 'src/Rider/Infrastructure/Persistence/Relational/Entity/rider.entity';
 import { RelationalPersistenceAdminModule } from 'src/Admin/Infrastructure/Persistence/Relational/relational-persistence-admin.module';
 import { RelationalPersistenceRiderModule } from 'src/Rider/Infrastructure/Persistence/Relational/relational-persistence-rider.module';
+import { WalletService } from 'src/Rider/wallet/wallet.service';
 
 @Module({
   imports: [
@@ -36,7 +37,8 @@ import { RelationalPersistenceRiderModule } from 'src/Rider/Infrastructure/Persi
     PaystackService,
     CustomAxiosService,
     EventsGateway,
-    PushNotificationsService
+    PushNotificationsService,
+    WalletService
   ],
   controllers: [OrderController],
 })

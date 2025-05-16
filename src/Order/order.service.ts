@@ -31,6 +31,7 @@ import { PushNotificationsService } from 'src/utils/services/push-notification.s
 import { RiderRepository, TransactionRepository } from 'src/Rider/Infrastructure/Persistence/rider-repository';
 import { TransactionStatus, TransactionType } from 'src/Enums/transaction.enum';
 import { RiderBidResponseStatus } from './Infrastructure/Persistence/Relational/Entity/bidResponse.entity';
+import { WalletService } from 'src/Rider/wallet/wallet.service';
 
 @Injectable()
 export class OrderService {
@@ -50,6 +51,7 @@ export class OrderService {
     private cloudinaryService: CloudinaryService,
     private geolocationService: GeoLocationService,
     private paystackService: PaystackService,
+    private walletService:WalletService,
 
     private readonly eventsGateway: EventsGateway,
 
@@ -491,6 +493,13 @@ export class OrderService {
           order.paymentStatus = PaymentStatus.SUCCESFUL;
 
           await this.orderRepository.save(order);
+
+          //fund wallet 
+
+          await this.walletService.FundWallet(
+            order.Rider.riderID,
+            order.orderID
+          );
 
           await this.notificationService.create({
             subject: `${transaction.type} successful Payment Notification`,

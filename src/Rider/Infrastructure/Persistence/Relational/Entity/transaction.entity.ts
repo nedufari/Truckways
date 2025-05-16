@@ -38,7 +38,7 @@ export class TransactionEntity {
   transactionID: string;
 
   @ApiProperty({ type: String })
-  @Column({ unique: true })
+  @Column({ nullable:true })
   walletAddrress?: string;
 
   @ApiProperty({ type: Number })
