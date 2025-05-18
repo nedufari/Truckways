@@ -52,6 +52,7 @@ export class RiderRelationalRepository implements RiderRepository {
   async findByID(id: number): Promise<Rider> {
     const rider = await this.riderEntityRepository.findOne({
       where: { id: id },
+      relations: ['my_wallet', 'vehicle', 'bank_details','rides','my_transactions'],
     });
     return rider ? RiderMapper.toDomain(rider) : null;
   }
@@ -59,6 +60,7 @@ export class RiderRelationalRepository implements RiderRepository {
   async findByEmail(email: string): Promise<Rider> {
     const rider = await this.riderEntityRepository.findOne({
       where: { email: email },
+      relations: ['my_wallet', 'vehicle', 'bank_details','rides','my_transactions'],
     });
     return rider ? RiderMapper.toDomain(rider) : null;
   }
@@ -66,6 +68,7 @@ export class RiderRelationalRepository implements RiderRepository {
   async findbyPasswordResetToken(token: string): Promise<Rider> {
     const rider = await this.riderEntityRepository.findOne({
       where: { resetPasswordToken: token },
+      relations: ['my_wallet', 'vehicle', 'bank_details','rides','my_transactions'],
     });
     return rider ? RiderMapper.toDomain(rider) : null;
   }
@@ -76,7 +79,7 @@ export class RiderRelationalRepository implements RiderRepository {
       skip: (page - 1) * limit,
       take: limit,
       order: { [sortBy]: sortOrder },
-      relations: ['vehicle'],
+      relations: ['my_wallet', 'vehicle', 'bank_details','rides','my_transactions'],
     });
     const riders = result.map(RiderMapper.toDomain);
     return { data: riders, total };
@@ -84,7 +87,7 @@ export class RiderRelationalRepository implements RiderRepository {
 
   async find2(): Promise<Rider[]> {
     const result = await this.riderEntityRepository.find({
-      relations: ['vehicle'],
+      relations: ['my_wallet', 'vehicle', 'bank_details','rides','my_transactions'],
     });
     const riders = result.map(RiderMapper.toDomain);
     return riders;
@@ -93,6 +96,7 @@ export class RiderRelationalRepository implements RiderRepository {
   async findRidersForAnnouncement(): Promise<Rider[]> {
     const result = await this.riderEntityRepository.find({
       where: { isAprroved: true },
+      //relations: ['my_wallet', 'vehicle', 'bank_details','rides','my_transactions'],
       select: ['email', 'riderID', 'deviceToken'],
     });
     const wallets = result.map(RiderMapper.toDomain);
