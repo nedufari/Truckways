@@ -1421,5 +1421,118 @@ export class AdminController {
     return await this.adminService.FetchAllAnnouncements(dto);
   }
 
+  @Get('customerCount')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse< number>) },
+        {
+          properties: {
+            payload: {
+             // $ref: getSchemaPath(Announcement),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'customer count' })
+  async customercount(
+  ): Promise<StandardResponse<number>> {
+    return await this.adminService.CustomerCount();
+  }
+
+  @Get('riderCount')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse< number>) },
+        {
+          properties: {
+            payload: {
+             // $ref: getSchemaPath(Announcement),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'rider count' })
+  async Ridercount(
+  ): Promise<StandardResponse<number>> {
+    return await this.adminService.RiderCount();
+  }
+
+  @Get('orderCount')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse< number>) },
+        {
+          properties: {
+            payload: {
+             // $ref: getSchemaPath(Announcement),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'order count' })
+  async orderCount(
+  ): Promise<StandardResponse<number>> {
+    return await this.adminService.OrderCount();
+  }
+
+  @Get('bidCount')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse< number>) },
+        {
+          properties: {
+            payload: {
+             // $ref: getSchemaPath(Announcement),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'bid count' })
+  async bidcount(
+  ): Promise<StandardResponse<number>> {
+    return await this.adminService.bidCount();
+  }
+
+
+  @Get('transactionMetrics')
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(StandardResponse< any>) },
+        {
+          properties: {
+            payload: {
+             // $ref: getSchemaPath(Announcement),
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({ summary: 'all transaction metrics' })
+  async tranactionMetrics(
+  ):Promise<
+  StandardResponse<{
+    totalPaymentsMade: number;
+    totalRevenue: number;
+    totalDisbursedMoney: number;
+    totalUndisbursedMoney: number;
+  }>> 
+  {
+    return await this.adminService.AllTransactionMetrics();
+  }
+
 
 }

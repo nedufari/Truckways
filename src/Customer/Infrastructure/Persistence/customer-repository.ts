@@ -13,4 +13,5 @@ export abstract class CustomerRepository{
     abstract profile (customer:Customer):Promise<Customer>
     abstract save (customer:Customer):Promise<Customer>
     abstract searchCustomer (searchdto:SearchDto):Promise<{data:Customer[], total:number}>
+    abstract customerCount():Promise<number>
 }

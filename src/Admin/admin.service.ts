@@ -86,7 +86,7 @@ export class AdminService {
     private genefratorService: GeneratorService,
     private mailService: MailService,
     private readonly eventsGateway: EventsGateway,
-    private readonly pushNotificationService:PushNotificationsService,
+    private readonly pushNotificationService: PushNotificationsService,
   ) {}
 
   async fetchAllNotifications(
@@ -1100,12 +1100,13 @@ export class AdminService {
             tokens,
           };
 
-          result = await this.pushNotificationService.sendNotificationToTargetUsers(
-            tokens,
-            dto.title,
-            dto.body,
-            data
-          );
+          result =
+            await this.pushNotificationService.sendNotificationToTargetUsers(
+              tokens,
+              dto.title,
+              dto.body,
+              data,
+            );
         } else if (usertype === AnnonuncmentTargetUser.RIDERS) {
           const riders = await this.riderRepo.findRidersForAnnouncement();
           const tokens = riders
@@ -1134,12 +1135,13 @@ export class AdminService {
             tokens,
           };
 
-          result = await this.pushNotificationService.sendNotificationToTargetUsers(
-            tokens,
-            dto.title,
-            dto.body,
-            data
-          );
+          result =
+            await this.pushNotificationService.sendNotificationToTargetUsers(
+              tokens,
+              dto.title,
+              dto.body,
+              data,
+            );
         }
       }
 
@@ -1174,12 +1176,12 @@ export class AdminService {
     }
   }
 
-
   async FetchAllAnnouncements(
     dto: PaginationDto,
   ): Promise<StandardResponse<{ data: Announcement[]; total: number }>> {
     try {
-      const { data: orders, total } = await this.announcemementRepository.find(dto);
+      const { data: orders, total } =
+        await this.announcemementRepository.find(dto);
 
       return this.responseService.success(
         orders.length
@@ -1205,11 +1207,10 @@ export class AdminService {
     announcementID: number,
   ): Promise<StandardResponse<Announcement>> {
     try {
-      const order = await this.announcemementRepository.findByID(announcementID);
+      const order =
+        await this.announcemementRepository.findByID(announcementID);
       if (!order)
-        return this.responseService.notFound(
-          'announcement not found ',
-        );
+        return this.responseService.notFound('announcement not found ');
 
       return this.responseService.success(
         'single announcement  retrieved successfully',
@@ -1223,4 +1224,97 @@ export class AdminService {
     }
   }
 
+  //counts
+
+  async CustomerCount(): Promise<StandardResponse<number>> {
+    try {
+      const count = await this.customerRepo.customerCount();
+
+      return this.responseService.success(
+        'Customer count returned successfully',
+        count,
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error fetching customer count ',
+        error.message,
+      );
+    }
+  }
+
+  async RiderCount(): Promise<StandardResponse<number>> {
+    try {
+      const count = await this.riderRepo.RiderCount();
+
+      return this.responseService.success(
+        'Rider count returned successfully',
+        count,
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error fetching rider count ',
+        error.message,
+      );
+    }
+  }
+
+  async OrderCount(): Promise<StandardResponse<number>> {
+    try {
+      const count = await this.orderRepository.orderCount();
+
+      return this.responseService.success(
+        'Order count returned successfully',
+        count,
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error fetching order count ',
+        error.message,
+      );
+    }
+  }
+
+  async bidCount(): Promise<StandardResponse<number>> {
+    try {
+      const count = await this.bidRepository.bidCount();
+
+      return this.responseService.success(
+        'Bids count returned successfully',
+        count,
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error fetching bid count ',
+        error.message,
+      );
+    }
+  }
+
+  async AllTransactionMetrics(): Promise<
+    StandardResponse<{
+      totalPaymentsMade: number;
+      totalRevenue: number;
+      totalDisbursedMoney: number;
+      totalUndisbursedMoney: number;
+    }>
+  > {
+    try {
+      const metrics = await this.transactionRepo.getTransactionMetrics();
+
+      return this.responseService.success(
+        'All transaction metrics returned successfully',
+        {
+          totalPaymentsMade: metrics.totalPaymentsMade,
+          totalRevenue: metrics.totalRevenue,
+          totalDisbursedMoney: metrics.totalDisbursedMoney,
+          totalUndisbursedMoney: metrics.totalUndisbursedMoney,
+        },
+      );
+    } catch (error) {
+      return this.responseService.internalServerError(
+        'Error while returning transaction metrics',
+        error.message,
+      );
+    }
+  }
 }

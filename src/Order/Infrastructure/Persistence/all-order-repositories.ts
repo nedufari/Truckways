@@ -15,6 +15,7 @@ export abstract class OrderRepository {
   abstract save(order: Order): Promise<Order>;
   abstract searchOrder (searchdto:SearchDto):Promise<{data:Order[], total:number}>
   abstract trackOrder (keyword:string):Promise<Order>
+  abstract orderCount():Promise<number>
 }
 
 export abstract class OrderCartRepository {
@@ -52,6 +53,7 @@ export abstract class BidRepository {
   abstract update(id: number, item: Partial<Bid>): Promise<Bid>;
   abstract save(bid: Bid): Promise<Bid>;
   abstract searchBid(searchdto:SearchDto):Promise<{data:Bid[], total:number}>
+  abstract bidCount():Promise<number>
 }
 
 export abstract class RiderBidResponseRepository{

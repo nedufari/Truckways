@@ -22,6 +22,7 @@ export abstract class RiderRepository{
     abstract profile (rider:Rider):Promise<Rider>
     abstract save (rider:Rider):Promise<Rider>
     abstract searchRider (searchdto:SearchDto):Promise<{data:Rider[], total:number}>
+    abstract RiderCount():Promise<number>
 }
 
 export abstract class VehicleRepository{
@@ -66,6 +67,13 @@ export abstract class TransactionRepository{
     abstract executeWithTransaction<T>(
         operation: (repository: Repository<TransactionEntity>) => Promise<T>
       ): Promise<T>;
+
+    abstract getTransactionMetrics(): Promise<{
+        totalPaymentsMade: number;
+        totalRevenue: number;
+        totalDisbursedMoney: number;
+        totalUndisbursedMoney: number;
+      }> 
 }
 
 

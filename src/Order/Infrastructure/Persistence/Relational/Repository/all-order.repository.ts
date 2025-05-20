@@ -135,6 +135,10 @@ export class OrderRelationalRepository implements OrderRepository {
 
     return order ? OrderMapper.toDomain(order) : null;
   }
+
+  async orderCount():Promise<number>{
+    return await this.orderEntityRepository.count()
+  }
 }
 
 ///order cart
@@ -409,6 +413,10 @@ export class BidsRelationalRepository implements BidRepository {
     const [orders, total] = await qb.getManyAndCount();
 
     return { data: orders, total };
+  }
+
+  async bidCount():Promise<number>{
+    return await this.bidEntityRepository.count()
   }
 }
 

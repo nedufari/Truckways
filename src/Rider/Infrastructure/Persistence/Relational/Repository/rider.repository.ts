@@ -28,6 +28,7 @@ import { Rides } from 'src/Rider/Domain/rides';
 import { RidesMapper } from '../Mapper/rides.mapper';
 import { RidesEntity } from '../Entity/rides.entity';
 import { RideStatus } from 'src/Enums/order.enum';
+import { TransactionStatus } from 'src/Enums/transaction.enum';
 
 export class RiderRelationalRepository implements RiderRepository {
   constructor(
@@ -156,6 +157,10 @@ export class RiderRelationalRepository implements RiderRepository {
     const [riders, total] = await qb.getManyAndCount();
 
     return { data: riders, total };
+  }
+
+  async RiderCount():Promise<number>{
+    return await this.riderEntityRepository.count()
   }
 }
 
@@ -525,6 +530,129 @@ export class TransactionRelationalRepository implements TransactionRepository {
       await queryRunner.release();
     }
   }
+
+  // Add these methods to your TransactionRelationalRepository class
+
+// Add these methods to your TransactionRelationalRepository class
+
+async getTotalPaymentsMade(): Promise<number> {
+  // Fix: Use the correct JSON syntax and ensure enum value matches database
+  const result = await this.repository
+    .createQueryBuilder('transaction')
+    .select('SUM(transaction.amount)', 'total')
+    .where("transaction.metadata->>'type' = :type", { type: 'order_payment' })
+    .andWhere('transaction.status = :status', { status: TransactionStatus.SUCCESSFUL })
+    .getRawOne();
+  
+  return result && result.total ? parseFloat(result.total) : 0;
+}
+
+async getTotalRevenue(): Promise<number> {
+  // Fix: Use the correct enum value from TransactionStatus enum
+  const successfulStatus = TransactionStatus.SUCCESSFUL;
+  
+  const result = await this.dataSource.query(`
+    WITH order_payments AS (
+      SELECT 
+        transaction.reference as order_id,
+        transaction.amount as total_amount
+      FROM transactions as transaction
+      WHERE transaction.metadata->>'type' = 'order_payment'
+      AND transaction.status = $1
+    ),
+    rider_payments AS (
+      SELECT
+        transaction.metadata->>'orderReference' as order_id,
+        SUM(transaction.amount) as disbursed_amount
+      FROM transactions as transaction
+      WHERE (transaction.metadata->>'type' = 'wallet_funding' OR transaction.metadata->>'type' = 'final_wallet_funding')
+      AND transaction.status = $1
+      GROUP BY transaction.metadata->>'orderReference'
+    )
+    SELECT COALESCE(SUM(op.total_amount - COALESCE(rp.disbursed_amount, 0)), 0) as total_revenue
+    FROM order_payments op
+    LEFT JOIN rider_payments rp ON op.order_id = rp.order_id
+  `, [successfulStatus]);
+  
+  return result && result[0] && result[0].total_revenue ? parseFloat(result[0].total_revenue) : 0;
+}
+
+async getTotalDisbursedMoney(): Promise<number> {
+  // Fix: Use the correct JSON syntax and ensure enum value matches database
+  const result = await this.repository
+    .createQueryBuilder('transaction')
+    .select('SUM(transaction.amount)', 'total')
+    .where("(transaction.metadata->>'type' = :initialType OR transaction.metadata->>'type' = :finalType)", { 
+      initialType: 'wallet_funding', 
+      finalType: 'final_wallet_funding' 
+    })
+    .andWhere('transaction.status = :status', { status: TransactionStatus.SUCCESSFUL })
+    .getRawOne();
+  
+  return result && result.total ? parseFloat(result.total) : 0;
+}
+
+async getTotalUndisbursedMoney(): Promise<number> {
+  // Fix: Use the correct enum value from TransactionStatus enum
+  const successfulStatus = TransactionStatus.SUCCESSFUL;
+  
+  const result = await this.dataSource.query(`
+    WITH completed_orders AS (
+      SELECT 
+        o.order_id,
+        o.total_amount,
+        COALESCE(r.disbursed_amount, 0) as disbursed_amount
+      FROM (
+        SELECT 
+          transaction.reference as order_id,
+          transaction.amount as total_amount
+        FROM transactions as transaction
+        WHERE transaction.metadata->>'type' = 'order_payment'
+        AND transaction.status = $1
+      ) o
+      LEFT JOIN (
+        SELECT
+          transaction.metadata->>'orderReference' as order_id,
+          SUM(transaction.amount) as disbursed_amount
+        FROM transactions as transaction
+        WHERE (transaction.metadata->>'type' = 'wallet_funding' OR transaction.metadata->>'type' = 'final_wallet_funding')
+        AND transaction.status = $1
+        GROUP BY transaction.metadata->>'orderReference'
+      ) r ON o.order_id = r.order_id
+    )
+    SELECT COALESCE(SUM(
+      CASE 
+        WHEN co.total_amount > co.disbursed_amount THEN co.total_amount - co.disbursed_amount
+        ELSE 0
+      END
+    ), 0) as undisbursed_amount
+    FROM completed_orders co
+  `, [successfulStatus]);
+  
+  return result && result[0] && result[0].undisbursed_amount ? parseFloat(result[0].undisbursed_amount) : 0;
+}
+
+// Add a convenience method to get all metrics at once
+async getTransactionMetrics(): Promise<{
+  totalPaymentsMade: number;
+  totalRevenue: number;
+  totalDisbursedMoney: number;
+  totalUndisbursedMoney: number;
+}> {
+  const [totalPaymentsMade, totalRevenue, totalDisbursedMoney, totalUndisbursedMoney] = await Promise.all([
+    this.getTotalPaymentsMade(),
+    this.getTotalRevenue(),
+    this.getTotalDisbursedMoney(),
+    this.getTotalUndisbursedMoney()
+  ]);
+  
+  return {
+    totalPaymentsMade,
+    totalRevenue,
+    totalDisbursedMoney,
+    totalUndisbursedMoney
+  };
+}
 }
 export class RidesRelationalRepository implements RidesRepository {
   constructor(

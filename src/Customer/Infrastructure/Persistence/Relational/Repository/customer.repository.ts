@@ -134,4 +134,8 @@ export class CustomerRelationalRepository implements CustomerRepository {
 
     return { data: customers, total };
   }
+
+  async customerCount():Promise<number>{
+    return await this.customerEntityRepository.count()
+  }
 }

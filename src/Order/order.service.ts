@@ -496,12 +496,16 @@ export class OrderService {
 
           //fund wallet 
 
-          try {
-            await this.walletService.FundWallet(order.Rider.riderID, order.orderID);
-          } catch (walletError) {
-            console.error('Wallet funding failed:', walletError);
-            
-          }
+          // Fund wallet - FIXED: await the result and handle properly
+        const walletFundingResult = await this.walletService.FundWallet(
+          order.Rider.riderID, 
+          order.orderID
+        );
+          
+        if (!walletFundingResult.success) {
+          console.error('Wallet funding failed:', walletFundingResult.message);
+          // We continue processing but log the error
+        }
 
           await this.notificationService.create({
             subject: `${transaction.type} successful Payment Notification`,

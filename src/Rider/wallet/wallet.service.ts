@@ -105,51 +105,51 @@ export class WalletService {
     try {
       const order = await this.orderRepository.findByID(orderId);
       if (!order) return this.responseService.notFound('order not found');
-
+  
       if (order.orderStatus !== OrderStatus.COMPLETED)
         return this.responseService.badRequest('Order is not completed');
-
+  
       const findInitialTransaction =
         await this.transactionRepository.findByReference(order.orderID);
       if (!findInitialTransaction)
         return this.responseService.notFound(
           'initial Transaction related to this order not found',
         );
-
-      //check for final transaction to ensure you dont recieve money twice
+  
+      // check for final transaction to ensure you dont receive money twice
       const findFinalTransaction =
         await this.transactionRepository.findByReferenceFinal(order.orderID);
       if (findFinalTransaction)
-        return this.responseService.notFound(
+        return this.responseService.badRequest(
           'you have already been paid completely for this Ride',
         );
-
-      //retirve truckways percentage
+  
+      // retrieve truckways percentage
       const truckwaysPercentage = await this.percentageRepository.findByType(
         PercentageType.TRUCKWYS_PERCENTAGE_FROM_A_RIDE,
       );
       if (!truckwaysPercentage)
         return this.responseService.notFound('Truckways Percentage not found');
-
-      //calculate amount
-      const totlaAmount = order.accepted_bid;
+  
+      // calculate amount
+      const totalAmount = order.accepted_bid;
       const initialAmount = findInitialTransaction.amount;
-      const truckwaysCut = totlaAmount * truckwaysPercentage.percentage;
-      const remainingforRider = totlaAmount - initialAmount - truckwaysCut;
-
+      const truckwaysCut = totalAmount * truckwaysPercentage.percentage;
+      const remainingforRider = totalAmount - initialAmount - truckwaysCut;
+  
       if (remainingforRider <= 0)
         return this.responseService.badRequest(
           'no remaining balance for deduction',
         );
-
-      //update rider's wallet
+  
+      // update rider's wallet
       const wallet = await this.walletRepository.findByRiderID(RiderId);
       if (!wallet) return this.responseService.notFound('Wallet not found');
       wallet.balance = Number(wallet.balance) + Number(remainingforRider);
       wallet.updatedAT = new Date();
-
+  
       await this.walletRepository.update(wallet.walletAddrress, wallet);
-
+  
       // Create final transaction for rider
       const transactionID = `TrkT${await this.generatorService.generateUserID()}`;
       const finalTransaction = await this.transactionRepository.create({
@@ -169,6 +169,17 @@ export class WalletService {
         createdAT: new Date(),
       });
       await this.transactionRepository.save(finalTransaction);
+      
+      await this.notificationsService.create({
+        subject: 'Final Payment Completed',
+        message: `Final credit of ${remainingforRider} to your wallet after Truckways fee deduction`,
+        account: order.Rider.riderID,
+      });
+  
+      return this.responseService.success(
+        'Final wallet funding completed',
+        finalTransaction,
+      );
     } catch (error) {
       console.error('FinalFundWallet Error:', error);
       return this.responseService.internalServerError(
