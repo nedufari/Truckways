@@ -61,7 +61,7 @@ export class AdminRelationalRepository implements AdminRepository {
       skip: (page - 1) * limit,
       take: limit,
       order: { [sortBy]: sortOrder },
-      relations: ['owner'],
+    
     });
     const wallets = result.map(AdminMapper.toDomain);
     return { data: wallets, total };
