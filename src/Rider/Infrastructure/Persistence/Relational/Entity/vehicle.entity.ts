@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { RiderEntity } from "./rider.entity";
 import { Rider } from "src/Rider/Domain/rider";
 
@@ -39,7 +39,7 @@ export class VehicleEntity{
     updatedAT:Date
 
     @ApiProperty({type:()=>RiderEntity})
-    @OneToOne(()=>RiderEntity, (rider)=>rider.vehicle)
+    @ManyToOne(()=>RiderEntity, (rider)=>rider.vehicle)
     @JoinColumn() 
     owner:RiderEntity
 

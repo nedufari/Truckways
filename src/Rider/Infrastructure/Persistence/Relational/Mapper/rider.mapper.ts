@@ -4,6 +4,9 @@ import { OrderMapper } from 'src/Order/Infrastructure/Persistence/Relational/Map
 import { BidMapper } from 'src/Order/Infrastructure/Persistence/Relational/Mapper/bids.mapper';
 import { TransactionMapper } from './transaction.mapper';
 import { RidesMapper } from './rides.mapper';
+import { BankMapper } from './bank.mapper';
+import { VehicleMapper } from './vehicle.mapper';
+import { Vehicle } from 'src/Rider/Domain/vehicle';
 
 export class RiderMapper {
   static toDomain(raw: RiderEntity): Rider {
@@ -30,8 +33,8 @@ export class RiderMapper {
     domainEntity.onboardingPercentage = raw.onboardingPercentage;
     domainEntity.onboardingStatus = raw.onboardingStatus;
     domainEntity.onboardingAction = raw.onboardingAction;
-    domainEntity.vehicle = raw.vehicle;
-    domainEntity.bank_details = raw.bank_details;
+    domainEntity.vehicle = raw.vehicle ? raw.vehicle.map((veh)=>VehicleMapper.toDomain(veh)):[];
+    domainEntity.bank_details = raw.bank_details ? raw.bank_details.map((bnk)=>BankMapper.toDomain(bnk)):[];
     domainEntity.my_wallet = raw.my_wallet;
     domainEntity.accepted_orders = raw.accepted_orders
       ? raw.accepted_orders.map((order) => OrderMapper.toDomain(order))
@@ -91,8 +94,8 @@ export class RiderMapper {
     persistenceEntity.updatedAT = domainEntity.updatedAT;
     persistenceEntity.createdAT = domainEntity.createdAT;
     persistenceEntity.my_wallet = domainEntity.my_wallet;
-    persistenceEntity.vehicle = domainEntity.vehicle;
-    persistenceEntity.bank_details = domainEntity.bank_details;
+    persistenceEntity.vehicle = domainEntity.vehicle ? domainEntity.vehicle.map((veh)=>VehicleMapper.toPersistence(veh)):[];
+    persistenceEntity.bank_details = domainEntity.bank_details ? domainEntity.bank_details.map((bnk)=>BankMapper.toPersistence(bnk)):[];
     persistenceEntity.my_transactions = domainEntity.my_transactions
       ? domainEntity.my_transactions.map((trans) =>
           TransactionMapper.toPersistence(trans),

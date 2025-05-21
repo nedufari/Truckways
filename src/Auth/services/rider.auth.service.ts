@@ -385,29 +385,33 @@ export class RiderAuthService {
     try {
       const rider = await this.riderRepository.findByEmail(dto.email);
       if (!rider) return this.responseService.notFound('Invalid credentials');
-
+  
       const comparePassword = await this.generatorService.comaprePassword(
         dto.password,
         rider.password,
       );
       if (!comparePassword)
         return this.responseService.notFound('Invalid credentials');
-
-      // Generate and return JWT token
-      const token = await this.generatorService.signToken(
-        rider.id,
-        rider.email,
-        rider.role,
-      );
-
+  
+      // Check if email is confirmed
       if (!rider.emailConfirmed)
         return this.responseService.badRequest(
           'Your account is not verified yet. Please check your email for verification instructions.',
         );
-
-      if (rider.onboardingPercentage !== 100) {
+  
+      // Check if rider is blocked
+      if (rider.isBlocked)
+        return this.responseService.badRequest(
+          'Your account has been suspended. Please contact our support team via email to resolve this issue.',
+        );
+        
+      // Convert onboardingPercentage to a number for comparison (since it appears to be stored as a string)
+      const onboardingPercent = Number(rider.onboardingPercentage);
+      
+      // Check if onboarding is complete (100%)
+      if (onboardingPercent < 100) {
         const pendingSteps = [];
-
+  
         if (!rider.onboardingStatus?.Personal_Profile) {
           pendingSteps.push('Personal Profile');
         }
@@ -417,34 +421,48 @@ export class RiderAuthService {
         if (!rider.onboardingStatus?.Payment_Profile) {
           pendingSteps.push('Payment Profile');
         }
-
+  
         const pendingStepsText =
           pendingSteps.length > 0
             ? `You still need to complete: ${pendingSteps.join(', ')}.`
             : '';
-
+  
+        // Generate temporary token for onboarding completion
+        const onboardingToken = await this.generatorService.signToken(
+          rider.id,
+          rider.email,
+          rider.role,
+           // Add claims to identify this as temp token
+        );
+  
         return this.responseService.success(
           `Welcome back! Your profile is ${rider.onboardingPercentage}% complete. ${pendingStepsText} We've provided a temporary access token to help you complete your onboarding.`,
-          { rider: rider, onboardingToken: token },
+          { rider: rider, token: onboardingToken, isOnboardingToken: true },
         );
       }
-
-      if (!rider.isAprroved)
+      
+      // At this point, onboarding is 100% complete
+      
+      // Now check for approval status (only check this if onboarding is complete)
+      if (!rider.isAprroved) {
         return this.responseService.badRequest(
           'Your account is pending approval from Truckways Management. Please try again after you receive the approval email. Thank you for your patience.',
         );
-
-      if (rider.isBlocked)
-        return this.responseService.badRequest(
-          'Your account has been suspended. Please contact our support team via email to resolve this issue.',
-        );
-
+      }
+  
+      // User is fully onboarded and approved - generate full access token
+      const token = await this.generatorService.signToken(
+        rider.id,
+        rider.email,
+        rider.role,
+      );
+  
       await this.notificationService.create({
         message: `Hi ${rider.name}, you've logged in successfully.`,
         subject: 'User Login',
         account: rider.riderID,
       });
-
+  
       return this.responseService.success('Login successful', {
         token: token,
         user: rider,

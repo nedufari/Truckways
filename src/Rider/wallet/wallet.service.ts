@@ -64,7 +64,7 @@ export class WalletService {
       wallet.balance = Number(wallet.balance) + Number(transferAmount);
       wallet.updatedAT = new Date();
 
-      await this.walletRepository.update(wallet.walletAddrress, wallet);
+      await this.walletRepository.save(wallet);
 
       const transaction = await this.transactionRepository.create({
         transactionID,
@@ -148,7 +148,7 @@ export class WalletService {
       wallet.balance = Number(wallet.balance) + Number(remainingforRider);
       wallet.updatedAT = new Date();
   
-      await this.walletRepository.update(wallet.walletAddrress, wallet);
+      await this.walletRepository.save(wallet);
   
       // Create final transaction for rider
       const transactionID = `TrkT${await this.generatorService.generateUserID()}`;

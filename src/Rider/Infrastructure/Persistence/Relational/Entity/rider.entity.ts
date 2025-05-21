@@ -142,14 +142,14 @@ export class RiderEntity {
 
 
   //vehicle
-  @ApiProperty({ type: () => VehicleEntity })
-  @OneToOne(() => VehicleEntity, (vehicle) => vehicle.owner)
-  vehicle: VehicleEntity;
+  @ApiProperty({ type: () => [VehicleEntity] })
+  @OneToMany(() => VehicleEntity, (vehicle) => vehicle.owner)
+  vehicle: VehicleEntity[];
 
   //bank  info
-  @ApiProperty({ type: () => BankEntity })
-  @OneToOne(() => BankEntity, (bank) => bank.owner)
-  bank_details: BankEntity;
+  @ApiProperty({ type: () => [BankEntity] })
+  @OneToMany(() => BankEntity, (bank) => bank.owner)
+  bank_details: BankEntity[];
 
   //wallet
   @ApiProperty({ type: () => WalletEntity })

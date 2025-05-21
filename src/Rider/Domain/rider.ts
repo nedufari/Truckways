@@ -128,12 +128,12 @@ export class Rider {
   //rides
 
   //vehicle
-  @ApiProperty({ type: () => VehicleEntity })
-  vehicle: VehicleEntity;
+  @ApiProperty({ type: () => [VehicleEntity] })
+  vehicle: VehicleEntity[];
 
   //bank  info
-  @ApiProperty({ type: () => BankEntity })
-  bank_details: BankEntity;
+  @ApiProperty({ type: () => [BankEntity] })
+  bank_details: BankEntity[];
 
   //accepted orders
   @ApiProperty({ type: () => [OrderEntity] })

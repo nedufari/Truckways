@@ -182,6 +182,7 @@ export class VehicleRelationalRepository implements VehicleRepository {
   async findByID(id: string): Promise<Vehicle> {
     const vehicle = await this.vehicleEntityRepository.findOne({
       where: { vehicleID: id },
+
     });
     return vehicle ? VehicleMapper.toDomain(vehicle) : null;
   }

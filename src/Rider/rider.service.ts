@@ -333,6 +333,10 @@ export class RiderService {
     mediafile: Express.Multer.File[],
   ): Promise<StandardResponse<Vehicle>> {
     try {
+
+      const truueRider = await this.riderRepository.findByID(rider.id);
+      if (!truueRider) return this.responseService.notFound('Rider not found');
+
       const fileUploadPromises = mediafile.map((file) =>
         this.cloudinaryService.uploadFile(file),
       );
@@ -343,7 +347,7 @@ export class RiderService {
 
       const vehicleIdcustom = `TrkRV${await this.generatorService.generateUserID()}`;
 
-      const vehicle = await this.vehicleRepository.create({
+      const vehicle = await this.vehicleRepository.save({
         id: 0,
         vehicleID: vehicleIdcustom,
         plateNumber: dto.plateNumber,
@@ -352,8 +356,12 @@ export class RiderService {
         vehiclePicture: vehiclePictureurl,
         createdAT: new Date(),
         updatedAT: undefined,
-        owner: rider,
+        owner: truueRider,
       });
+
+      rider.vehicle = rider.vehicle
+      ? [...rider.vehicle, vehicle]
+      : [vehicle];
 
       rider.onboardingAction = OnboardingAction.VEHICLE_PROFILE;
       rider.onboardingStatus ={ ...rider.onboardingStatus, 
@@ -392,9 +400,13 @@ export class RiderService {
     dto: BankDto,
   ): Promise<StandardResponse<Bank>> {
     try {
+
+      const truueRider = await this.riderRepository.findByID(rider.id);
+      if (!truueRider) return this.responseService.notFound('Rider not found');
+
       const bankIdcustom = `TrkRB${await this.generatorService.generateUserID()}`;
 
-      const bank = await this.bankRepository.create({
+      const bank = await this.bankRepository.save({
         id: 0,
         bankID: bankIdcustom,
         bankName: dto.bankName,
@@ -402,9 +414,14 @@ export class RiderService {
         accountNumber: dto.accountNumber,
         createdAT: new Date(),
         updatedAT: undefined,
-        owner: rider,
+        owner: truueRider,
       });
 
+      rider.bank_details = rider.bank_details
+      ? [...rider.bank_details, bank]
+      : [bank];
+
+     rider.updatedAT = new Date();
       rider.onboardingAction = OnboardingAction.PAYMENT_PROFILE;
       rider.onboardingStatus ={ ...rider.onboardingStatus, 
         Vehicle_Profile:rider.onboardingStatus?.Vehicle_Profile || false,
@@ -422,7 +439,7 @@ export class RiderService {
       await this.notificationsService.create({
         message: `${rider.name} has updated their Payment profile`,
         subject: 'Payment Profile Updated',
-        account: rider.riderID,
+        account: truueRider.riderID,
       });
 
       return this.responseService.success(
